@@ -1,0 +1,9 @@
+{
+  "app_id": "io.github.joshuaaferguson.kvm_status",
+  "name": "KVM Status",
+  "creator": "Joshua Ferguson",
+  "create_time": "2026-10-16",
+  "version": "0.1.0",
+  "desc": "At-a-glance health: target video and USB, Wi-Fi, IPs, CPU, temperature, memory. Detects and fixes a stuck video service.",
+  "category": "tools"
+}
