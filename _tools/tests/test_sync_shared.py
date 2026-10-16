@@ -38,6 +38,13 @@ class SyncSharedTest(unittest.TestCase):
         add_modules(self.root, "app-b", ["kvm_mcp"])
         self.assertEqual((self.root / "app-b" / "kvm_mcp.py").read_text(), "MCP = 1\n")
 
+    def test_add_modules_brings_dependencies(self):
+        (self.root / "_shared" / "font.py").write_text("GLYPH_PX = 8\n")
+        (self.root / "_shared" / "ui.py").write_text("import font\nfrom font import GLYPH_PX\n")
+        added = add_modules(self.root, "app-b", ["ui"])
+        self.assertEqual(added, ["ui.py", "font.py"])
+        self.assertTrue((self.root / "app-b" / "font.py").exists())
+
     def test_add_unknown_module_fails(self):
         with self.assertRaises(ValueError):
             add_modules(self.root, "app-b", ["nope"])

@@ -24,12 +24,14 @@ HEADER_H, FOOTER_H, GAP, ROW_H = 28, 18, 4, 30
 CONFIRM_S = 3.0
 SHORT_PRESS_S, FORCE_OFF_S = 0.5, 6.0
 FPS = 6
+EXIT_WAIT_S = 15.0  # long enough for a forced-off hold plus release retries
 PAGES = ("ISO", "Power")
 
 
 class Screen:
     def __init__(self, ctx: AppContext, web: KvmWeb) -> None:
         self.ctx, self.web = ctx, web
+        self.workers: list[threading.Thread] = []
         self.header, rest = ui.screen(ctx).split_top(HEADER_H)
         self.body, self.footer = rest.split_bottom(FOOTER_H)
         self.page = 0
@@ -67,7 +69,9 @@ class Screen:
             finally:
                 self.busy = ""
                 self.dirty = True
-        threading.Thread(target=work, daemon=True).start()
+        worker = threading.Thread(target=work, daemon=True)
+        self.workers = [w for w in self.workers if w.is_alive()] + [worker]
+        worker.start()
 
     def say(self, text: str, color: int) -> None:
         self.message, self.message_color, self.dirty = text, color, True
@@ -251,8 +255,12 @@ def main(ctx: AppContext) -> None:
     try:
         ctx.run(LOG.guard(screen.tick), fps=FPS, on_tap=LOG.guard(screen.on_tap), on_swipe=LOG.guard(screen.on_swipe))
     finally:
-        if web.held:  # exiting mid-hold: never leave the power button pressed
-            web.abort_hold()
+        # Exiting: refuse new presses, cut a hold short, and wait for a worker that
+        # may be about to press, so its own finally releases the button.
+        web.close()
+        for worker in screen.workers:
+            worker.join(EXIT_WAIT_S)
+        if web.held:  # never leave the power button pressed
             try:
                 web.release()
                 LOG.info("released Finger Robot on exit")

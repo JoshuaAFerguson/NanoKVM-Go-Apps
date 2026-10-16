@@ -148,10 +148,11 @@ class PetScreen:
                 return
             icon = self.button_actions()[index]
             action = {"wash": "clean", "wake": "sleep"}.get(icon, icon)
-            before = self.pet
-            self.pet = petsim.act(before, action, time.time())
-            if self.pet == before:
-                return  # refused (stuffed, too tired...): no fake feedback
+            refused = petsim.refuses(self.pet, action)
+            self.pet = petsim.act(self.pet, action, time.time())
+            if refused:  # stuffed, too tired...: no fake success feedback
+                self.save()
+                return
             if action in ("play", "feed", "heal"):
                 self.add_effect("heart", now)
                 self.motion.jump(now)

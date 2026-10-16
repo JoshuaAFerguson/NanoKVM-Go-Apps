@@ -87,6 +87,21 @@ class FakeHomelab(BaseHTTPRequestHandler):
             if "fieldSelector" not in query:
                 return self._send(K8S_ALL)
             return self._send(K8S_PROBLEMS)
+        if path == "/chunkdrip":  # chunked: a frame line that never ends, one byte at a time
+            import time as _t
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Transfer-Encoding", "chunked")
+            self.end_headers()
+            try:
+                self.wfile.write(b"1\r\n{\r\n1;ext=")
+                for _ in range(60):
+                    self.wfile.write(b"x")
+                    self.wfile.flush()
+                    _t.sleep(0.4)
+            except OSError:
+                pass
+            return
         if path == "/drip":  # slow-drip body: one byte every 0.4 s, far past the deadline
             import time as _t
             self.send_response(200)
@@ -254,6 +269,18 @@ class EndToEndTest(unittest.TestCase):
             start = time.monotonic()
             with self.assertRaisesRegex(httpjson.HttpError, "timed out"):
                 httpjson.get_json(self.base + "/drip", "drip")
+            self.assertLess(time.monotonic() - start, 3.0)
+        finally:
+            httpjson.TIMEOUT_S = saved
+
+    def test_slow_chunk_frames_hit_deadline(self):
+        import time
+        import httpjson
+        saved, httpjson.TIMEOUT_S = httpjson.TIMEOUT_S, 1.5
+        try:
+            start = time.monotonic()
+            with self.assertRaisesRegex(httpjson.HttpError, "timed out"):
+                httpjson.get_json(self.base + "/chunkdrip", "drip")
             self.assertLess(time.monotonic() - start, 3.0)
         finally:
             httpjson.TIMEOUT_S = saved

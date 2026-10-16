@@ -349,7 +349,7 @@ class VncServer:
 
     def key(self, session: Session, keysym: int, down: bool) -> None:
         with self._input_lock:
-            report = self._keyboard.event(keysym, down)
+            report = self._keyboard.event(keysym, down, owner=id(session))
             if report is None:
                 return
             self.hid.keyboard.set_state(report)
@@ -366,7 +366,7 @@ class VncServer:
         """Release only what this session holds (other clients keep their keys)."""
         with self._input_lock:
             for keysym in list(session.held):
-                report = self._keyboard.event(keysym, False)
+                report = self._keyboard.event(keysym, False, owner=id(session))
                 if report is not None:
                     release(self.hid.keyboard, report)
             session.held.clear()

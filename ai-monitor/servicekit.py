@@ -62,7 +62,7 @@ class AppPresence:
         return self.count >= GONE_CHECKS and now - self.since >= GONE_SECONDS
 
 
-PRIVATE_FILES = ("env.json", "status.json", "state.json", "control.json")
+PRIVATE_FILES = ("env.json", "status.json", "state.json", "control.json", "agent_token.json")
 
 
 def remove_service(unit: str, data: Path, log: Callable[[str], None] = print) -> None:

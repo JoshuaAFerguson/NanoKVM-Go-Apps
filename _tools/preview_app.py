@@ -150,6 +150,7 @@ def main(argv: list[str]) -> int:
     events += [(kind, WIDTH // 2, HEIGHT // 2) for kind in args.swipe]
     ctx = FakeContext(env, events, args.frames, args.realtime)
 
+    out = (args.out or Path(f"{app_dir.name}-preview.ppm")).resolve()  # before chdir: relative to the caller
     install_fake_appbase(ctx, app_dir)
     sys.path.insert(0, str(app_dir))
     os.chdir(app_dir)
@@ -158,7 +159,6 @@ def main(argv: list[str]) -> int:
     spec.loader.exec_module(module)
     module.main()
 
-    out = (args.out or Path(f"{app_dir.name}-preview.ppm")).resolve()
     ctx.fb.to_ppm(out)
     print(f"Wrote {out}")
     return 0

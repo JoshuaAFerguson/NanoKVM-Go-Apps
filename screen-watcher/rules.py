@@ -144,7 +144,14 @@ class Rules:
         events += self._step("bsod", bsod, now, lambda c: c.count >= s.bsod_checks)
         events += self._step("black", black and s.black_min > 0, now,
                              lambda c: now - c.since >= s.black_min * 60)
-        unchanged = not black and self._last is not None and same_screen(obs, self._last)
+        if self._last is None and not black:
+            # Nothing to compare with yet (first frame, after a restart or a video gap):
+            # frozen is unknown, so neither raise nor clear it until the next frame.
+            if self._conds["frozen"].alerted_at is None:
+                self._changed_at = now  # restart the frozen timer (but keep an active alert)
+            self._last = obs
+            return events
+        unchanged = not black and same_screen(obs, self._last)
         if not unchanged:
             self._changed_at = now
         events += self._step("frozen", unchanged and s.freeze_min > 0, now,

@@ -31,6 +31,15 @@ def _vin_ticks(pid: int) -> int | None:
         return None
 
 
+def _identity(pid: int) -> str:
+    """Start time (field 22 of /proc/<pid>/stat): tells a reused PID apart."""
+    stat = probes.read_text(f"/proc/{pid}/stat")
+    try:
+        return stat[stat.rindex(")") + 2:].split()[19] if stat else ""
+    except (IndexError, ValueError):
+        return ""
+
+
 class Collector:
     def __init__(self, log: Callable[[str], None]) -> None:
         self._log = log
@@ -63,27 +72,32 @@ class Collector:
 
     # -- restart (called from a UI-spawned thread) -------------------------
 
-    def _fresh_vin_cpu(self) -> int:
+    def _fresh_vin_cpu(self) -> tuple[int | None, str, int]:
+        """(pid, process identity, CPU %) of kvm_vin measured over VERIFY_S."""
         pid = probes.find_pid(VIN)
         before = _vin_ticks(pid) if pid else None
         if before is None:
-            return 0
+            return None, "", 0
+        identity = _identity(pid)
         time.sleep(VERIFY_S)
         after = _vin_ticks(pid)
-        return 0 if after is None else round(100 * (after - before) / CLK_TCK / VERIFY_S)
+        return pid, identity, 0 if after is None else round(100 * (after - before) / CLK_TCK / VERIFY_S)
 
     def restart_video_service(self) -> str:
         """SIGTERM kvm_vin (kvmcomm restarts it in ~7s), but only if it is *still* stuck."""
         if probes.read_hdmi().signal:
             return "Video is back - not restarting"
-        cpu = self._fresh_vin_cpu()
+        pid, identity, cpu = self._fresh_vin_cpu()
         if cpu < probes.SpinDetector().threshold:
             self._reset.set()
             return f"Video service recovered ({cpu}% CPU)"
-        pid = probes.find_pid(VIN)
-        # Re-check the name right before signalling so a reused PID is never hit.
-        if pid is None or probes.read_text(f"/proc/{pid}/comm").strip() != VIN:
-            return "Video service not running"
+        if probes.read_hdmi().signal:  # video came back while measuring: leave it alone
+            self._reset.set()
+            return "Video is back - not restarting"
+        # Signal only the process that was measured: same PID, same start time, same name.
+        if pid is None or not identity or _identity(pid) != identity \
+                or probes.read_text(f"/proc/{pid}/comm").strip() != VIN:
+            return "Video service changed - not restarting"
         os.kill(pid, signal.SIGTERM)
         self._reset.set()
         with self._lock:  # hide the warning now rather than after the next sample

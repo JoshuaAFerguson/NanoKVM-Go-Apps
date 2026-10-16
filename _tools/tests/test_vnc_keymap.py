@@ -39,6 +39,19 @@ class LookupTest(unittest.TestCase):
 
 
 class KeyboardTest(unittest.TestCase):
+    def test_shared_key_held_until_last_owner_releases(self):
+        kb = Keyboard()
+        kb.event(0xFFE3, True, owner="a")   # both clients hold Ctrl and "a"
+        kb.event(0xFFE3, True, owner="b")
+        kb.event(ord("a"), True, owner="a")
+        kb.event(ord("a"), True, owner="b")
+        report = kb.event(ord("a"), False, owner="a")
+        report = kb.event(0xFFE3, False, owner="a")
+        self.assertEqual(report[0], 0x01)    # Ctrl still down for b
+        self.assertEqual(report[2], 0x04)    # "a" still down for b
+        kb.event(0xFFE3, False, owner="b")
+        self.assertEqual(kb.event(ord("a"), False, owner="b"), bytes(8))
+
     def test_simple_press_release(self):
         kb = Keyboard()
         self.assertEqual(kb.event(ord("a"), True), bytes([0, 0, 0x04, 0, 0, 0, 0, 0]))

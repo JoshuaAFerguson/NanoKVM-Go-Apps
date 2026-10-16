@@ -24,6 +24,10 @@
       "label": "HA: CA certificate file",
       "description": "Optional path on the device to a PEM CA that signed the service's certificate (safer than *_INSECURE)"
     },
+    "HA_INSECURE": {
+      "label": "Home Assistant: skip TLS check",
+      "description": "true only for a self-signed HA certificate you can't add via HA_CA_FILE"
+    },
     "KUMA_URL": {
       "label": "Uptime Kuma URL",
       "description": "e.g. http://192.168.0.21:3001 - leave empty to hide"
@@ -31,6 +35,14 @@
     "KUMA_SLUG": {
       "label": "Uptime Kuma status page",
       "description": "Slug of a public status page, e.g. home"
+    },
+    "KUMA_CA_FILE": {
+      "label": "Uptime Kuma CA file",
+      "description": "Path on the KVM to a private CA certificate (PEM)"
+    },
+    "KUMA_INSECURE": {
+      "label": "Uptime Kuma: skip TLS check",
+      "description": "true only for a self-signed certificate"
     },
     "PVE_URL": {
       "label": "Proxmox URL",
@@ -63,6 +75,14 @@
       "description": "Optional",
       "secret": true
     },
+    "PROM_CA_FILE": {
+      "label": "Prometheus CA file",
+      "description": "Path on the KVM to a private CA certificate (PEM)"
+    },
+    "PROM_INSECURE": {
+      "label": "Prometheus: skip TLS check",
+      "description": "true only for a self-signed certificate"
+    },
     "K8S_URL": {
       "label": "Kubernetes API URL",
       "description": "e.g. https://192.168.0.50:6443 - leave empty to hide"
@@ -88,6 +108,10 @@
     "DOCKER_CA_FILE": {
       "label": "DOCKER: CA certificate file",
       "description": "Optional path on the device to a PEM CA that signed the service's certificate (safer than *_INSECURE)"
+    },
+    "DOCKER_INSECURE": {
+      "label": "Docker: skip TLS check",
+      "description": "true only for a self-signed certificate"
     },
     "REFRESH_S": {
       "label": "Refresh interval (s)",

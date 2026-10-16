@@ -109,6 +109,13 @@ class RulesTest(unittest.TestCase):
         r.update(NO_SIGNAL, now=500)
         self.assertEqual(r.update(frame(mixed=True), now=700), [])  # same image, but just came back
 
+    def test_restored_frozen_alert_waits_for_a_comparable_frame(self):
+        r = self.make(freeze_min=10)
+        r.restore({"seen_signal": True, "active": ["frozen"]}, now=0)
+        self.assertEqual(r.update(frame(mixed=True), now=5), [])      # nothing to compare yet
+        self.assertEqual(r.update(frame(mixed=True), now=10), [])     # still frozen: no flap
+        self.assertEqual(self.kinds(r.update(frame(), now=15)), [("frozen", "recovered")])
+
     def test_bsod_can_be_disabled(self):
         r = self.make(bsod=False)
         for t in (0, 30, 60):

@@ -70,6 +70,8 @@ class KvmWeb:
         self._auth_failed: tuple[float, str] | None = None
         self._lock = threading.Lock()
         self.held = False
+        self._power_lock = threading.Lock()
+        self._closed = threading.Event()
         # Loopback only; the device's own certificate is pinned (see localtls).
         self._opener = urllib.request.build_opener(
             urllib.request.ProxyHandler({}), urllib.request.HTTPSHandler(context=localtls.context()),
@@ -175,8 +177,11 @@ class KvmWeb:
         The release is always attempted (even if the press timed out or the wait is
         interrupted) and retried; if it still fails, the error says so loudly.
         """
-        self._abort.clear()
-        self.held = True
+        with self._power_lock:  # close() can't slip in between this check and the press
+            if self._closed.is_set():
+                raise KvmWebError("App is closing")
+            self._abort.clear()
+            self.held = True
         try:
             self._call("POST", "/api/vm/finger-robot/press", {})
             self._sleep(hold_s)
@@ -194,6 +199,12 @@ class KvmWeb:
                 last = exc
                 time.sleep(RELEASE_GAP_S * (attempt + 1))
         raise KvmWebError(f"RELEASE FAILED - check the Finger Robot ({last})")
+
+    def close(self) -> None:
+        """No new power actions from now on; cut a running hold short."""
+        with self._power_lock:
+            self._closed.set()
+        self._abort.set()
 
     def abort_hold(self) -> None:
         """Cut a running hold short (e.g. the App is exiting); power_press then releases."""

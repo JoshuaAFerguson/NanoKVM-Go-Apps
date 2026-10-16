@@ -45,6 +45,7 @@ def clean(status: dict) -> dict:
     return {
         "listening": str(status.get("listening") or "?"), "bind_error": str(status.get("bind_error") or ""),
         "fingerprint": str(status.get("fingerprint") or ""),
+        "token_from_setting": bool(status.get("token_from_setting")),
         "agent_counts": {k: int(num(v)) for k, v in counts.items()},
         "agents": [{"machine": str(a.get("machine", "?")), "project": str(a.get("project") or ""),
                     "state": str(a.get("state", "?")), "since": num(a.get("since"))} for a in dicts(status.get("agents"))],
@@ -230,11 +231,11 @@ class Panel:
         now = time.time()
         lines = [(f"{a['machine']} {a.get('project') or ''}".strip(), f"{a['state']} {ago(now - a.get('since', now))}",
                   STATE_COLORS.get(a["state"], ui.TEXT_DIM)) for a in status.get("agents", [])[:6]]
-        token = appdata.read_json(self.data / "agent_token.json", {})
-        token = token.get("token", "") if isinstance(token, dict) else ""
+        token = "" if status["token_from_setting"] else appdata.read_json(self.data / "agent_token.json", {})
+        token = token.get("token", "") if isinstance(token, dict) else ""  # the setting wins in the daemon
         # setup values are long: give each its own full-width line under its label
         lines += [("", "", ui.TEXT_DIM), ("Hook URL:", "", ui.TEXT_DIM), (f"https://{status.get('listening', '?')}", "", 0),
-                  ("Token:", "", ui.TEXT_DIM), (token or "(from AGENT_TOKEN setting)", "", 0),
+                  ("Token:", "", ui.TEXT_DIM), (token or "(your AGENT_TOKEN setting)", "", 0),
                   ("Cert SHA-256:", status.get("fingerprint", ""), ui.TEXT_DIM)]
         self.rows(lines)
 

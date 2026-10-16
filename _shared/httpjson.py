@@ -11,7 +11,9 @@ from __future__ import annotations
 
 import http.client
 import json
+import socket
 import ssl
+import threading
 import time
 import urllib.error
 import urllib.parse
@@ -67,19 +69,44 @@ def _shrink_socket_timeout(response, seconds: float) -> None:
 
 
 def _read_with_deadline(response, deadline: float, name: str) -> bytes:
-    """read1() does at most one recv per call, so a slow-drip server can't stretch
-    one read past the deadline; each recv's timeout is also cut to the time left."""
+    """Read the body within a hard wall-clock deadline. Each recv's timeout is cut
+    to the time left, and a watchdog shuts the socket down at the deadline, since
+    one read1() of a chunked body can do several recvs (frame lines, trailers)."""
+    sock = getattr(getattr(getattr(response, "fp", None), "raw", None), "_sock", None)
+    fired = threading.Event()
+
+    def expire() -> None:
+        fired.set()
+        try:
+            sock.shutdown(socket.SHUT_RDWR)  # unblocks a recv in progress
+        except (OSError, AttributeError):
+            pass
+
+    watchdog = threading.Timer(max(0.0, deadline - time.monotonic()), expire)
+    watchdog.daemon = True
+    watchdog.start()
+    try:
+        return _read_chunks(response, deadline, name, fired)
+    finally:
+        watchdog.cancel()
+
+
+def _read_chunks(response, deadline: float, name: str, fired: threading.Event) -> bytes:
     chunks, total = [], 0
     while True:
         left = deadline - time.monotonic()
-        if left <= 0:
+        if left <= 0 or fired.is_set():
             raise HttpError(f"{name}: timed out")
         _shrink_socket_timeout(response, left)
         try:
             chunk = response.read1(CHUNK)
-        except TimeoutError:
-            raise HttpError(f"{name}: timed out") from None
+        except (TimeoutError, OSError, ValueError, http.client.HTTPException):
+            if fired.is_set() or time.monotonic() >= deadline:
+                raise HttpError(f"{name}: timed out") from None
+            raise
         if not chunk:
+            if fired.is_set():  # Linux: shutdown() makes the blocked recv return EOF, not raise
+                raise HttpError(f"{name}: timed out")
             return b"".join(chunks)
         total += len(chunk)
         if total > MAX_BYTES:
