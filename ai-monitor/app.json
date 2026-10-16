@@ -1,0 +1,96 @@
+{
+  "app_id": "io.github.joshuaaferguson.ai_monitor",
+  "name": "AI Monitor",
+  "creator": "Joshua Ferguson",
+  "create_time": "2026-10-16",
+  "version": "0.1.0",
+  "desc": "AI API spend, coding-agent sessions (Claude Code hooks), AI control of this KVM with a kill switch, and local model servers.",
+  "category": "tools",
+  "post_script": "install-service.sh",
+  "env": {
+    "AGENT_TOKEN": {
+      "label": "Agent token",
+      "description": "Optional. Leave empty to auto-generate one (shown on the Agents page)",
+      "secret": true
+    },
+    "AI_BIND": {
+      "label": "Listen on",
+      "description": "tailscale (default), lan, all, or an IPv4 address",
+      "default": "tailscale"
+    },
+    "AI_PORT": {
+      "label": "Port",
+      "description": "Agent check-ins and the watched MCP endpoint",
+      "default": "8790"
+    },
+    "AGENT_NOTIFY": {
+      "label": "Notify when an agent needs you",
+      "description": "true/false",
+      "default": "true"
+    },
+    "ANTHROPIC_ADMIN_KEY": {
+      "label": "Anthropic Admin API key",
+      "description": "sk-ant-admin... (Console > Settings > Admin keys)",
+      "secret": true
+    },
+    "OPENAI_ADMIN_KEY": {
+      "label": "OpenAI Admin key",
+      "description": "Organization admin key for the Costs API",
+      "secret": true
+    },
+    "OPENROUTER_KEY": {
+      "label": "OpenRouter API key",
+      "description": "A normal key: shows that key's usage and remaining limit",
+      "secret": true
+    },
+    "OLLAMA_URL": {
+      "label": "Ollama URL",
+      "description": "e.g. http://192.168.0.50:11434"
+    },
+    "LMSTUDIO_URL": {
+      "label": "LM Studio URL",
+      "description": "e.g. http://192.168.0.51:1234"
+    },
+    "VLLM_URL": {
+      "label": "vLLM URL",
+      "description": "e.g. http://192.168.0.52:8000 (uses /metrics)"
+    },
+    "LLAMACPP_URL": {
+      "label": "llama.cpp server URL",
+      "description": "e.g. http://192.168.0.53:8080 (start with --metrics)"
+    },
+    "DEVICE_NAME": {
+      "label": "Name in alerts",
+      "description": "Defaults to the device hostname"
+    },
+    "NTFY_URL": {
+      "label": "ntfy topic URL",
+      "description": "e.g. https://ntfy.sh/my-kvm-alerts (pick a hard-to-guess topic)"
+    },
+    "NTFY_TOKEN": {
+      "label": "ntfy access token",
+      "description": "Optional, for protected topics",
+      "secret": true
+    },
+    "DISCORD_WEBHOOK": {
+      "label": "Discord webhook URL",
+      "description": "https://discord.com/api/webhooks/...",
+      "secret": true
+    },
+    "PUSHOVER_TOKEN": {
+      "label": "Pushover app token",
+      "description": "30-character application token",
+      "secret": true
+    },
+    "PUSHOVER_USER": {
+      "label": "Pushover user key",
+      "description": "30-character user key",
+      "secret": true
+    },
+    "HA_WEBHOOK_URL": {
+      "label": "Home Assistant webhook URL",
+      "description": "http(s)://<ha>/api/webhook/<id>; payload has title, message, level, device",
+      "secret": true
+    }
+  }
+}

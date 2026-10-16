@@ -41,6 +41,7 @@ treats every top-level directory as an App. That means:
 | [`text-alert`](text-alert/) | **Go+ only.** Notifies when a phrase (e.g. "Build succeeded", "Kernel panic") appears on the target's screen, via on-device OCR. |
 | [`media-power`](media-power/) | Mount ISO images on the virtual drive and press the target's power button (Finger Robot) from the touchscreen. Needs the web login. |
 | [`pixel-pet`](pixel-pet/) | A Tamagotchi-style pixel pet that grows into one of three forms, never dies, and notices what the KVM is doing. |
+| [`ai-monitor`](ai-monitor/) | AI API spend, Claude Code session states via hooks (alerts when an agent needs you), AI control of this KVM with a kill switch, and local LLM servers. |
 | [`hello-nanokvm`](hello-nanokvm/) | Smoke test: confirms this Store installs and runs Apps. |
 
 ## Repository layout
@@ -62,7 +63,8 @@ treats every top-level directory as an App. That means:
 │   ├── jpegdc.py           # DC-only JPEG decoder: block-average colours, pure Python
 │   ├── vinsnap.py          # snapshot client for the KVM's video service
 │   ├── alerter.py          # alert log, pause and retry queue for background services
-│   └── servicekit.py       # helpers for Apps with a background systemd service
+│   ├── servicekit.py       # helpers for Apps with a background systemd service
+│   └── httpjson.py         # bounded JSON/text HTTP client
 ├── _template/              # starter App copied by _tools/new_app.py
 ├── _tools/
 │   ├── new_app.py          # scaffold a new App with a matching app_id and shared modules
