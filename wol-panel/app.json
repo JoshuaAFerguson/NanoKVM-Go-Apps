@@ -1,0 +1,19 @@
+{
+  "app_id": "io.github.joshuaaferguson.wol_panel",
+  "name": "Wake-on-LAN",
+  "creator": "Joshua Ferguson",
+  "create_time": "2026-10-16",
+  "version": "0.1.0",
+  "desc": "Tap a machine to wake it over the network; see which machines are online.",
+  "category": "tools",
+  "env": {
+    "WOL_HOSTS": {
+      "label": "Machines",
+      "description": "Name=MAC@IP entries separated by ';' (IP optional, used for online status). Example: NAS=aa:bb:cc:dd:ee:ff@192.168.0.10; Desktop=11:22:33:44:55:66@192.168.0.20"
+    },
+    "WOL_BROADCAST": {
+      "label": "Extra broadcast addresses",
+      "description": "Optional, comma-separated. The global and local-subnet broadcasts are always used."
+    }
+  }
+}

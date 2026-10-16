@@ -6,17 +6,13 @@ because the NanoKVM Go has only ~35 MB of free RAM.
 
 from __future__ import annotations
 
-import fcntl
 import os
-import socket
-import struct
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 
 HDMI_DIR = Path("/proc/lt7911_info")
 GO_PLUS_MIN_MB = 200  # Go has 128 MB (119 visible), Go+ 256 MB+ (246 visible)
-SIOCGIFADDR = 0x8915
 
 
 @dataclass(frozen=True)
@@ -175,17 +171,6 @@ def read_usb_state() -> str:
     for udc in sorted(Path("/sys/class/udc").glob("*")):
         return read_text(udc / "state").strip() or "unknown"
     return "no gadget"
-
-
-def interface_ipv4(name: str) -> str:
-    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    try:
-        packed = fcntl.ioctl(sock.fileno(), SIOCGIFADDR, struct.pack("256s", name.encode()[:15]))
-        return socket.inet_ntoa(packed[20:24])
-    except OSError:
-        return ""
-    finally:
-        sock.close()
 
 
 def read_wifi(interface: str = "wlan0") -> Wifi:
