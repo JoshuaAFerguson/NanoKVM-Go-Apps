@@ -1,4 +1,6 @@
-"""Small, bounded JSON-over-HTTP client for LAN services (stdlib only).
+"""Small, bounded JSON-over-HTTP client (stdlib only).
+
+Shared module: edit _shared/httpjson.py, then run `python3 _tools/sync_shared.py`.
 
 Guarantees: 512 KB response cap, a whole-request deadline, no env proxies, no
 redirects (they would forward the auth header), and error messages that never
@@ -12,6 +14,7 @@ import json
 import ssl
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
 
 MAX_BYTES = 512 * 1024   # protect the Go's ~35 MB of free RAM
@@ -85,7 +88,18 @@ def _read_with_deadline(response, deadline: float, name: str) -> bytes:
 
 
 def get_json(url: str, name: str, headers: dict | None = None, verify_tls: bool = True, ca_file: str = ""):
-    request = urllib.request.Request(url, headers={"Accept": "application/json", **(headers or {})})
+    return decode(_get(url, name, {"Accept": "application/json", **(headers or {})}, verify_tls, ca_file), name)
+
+
+def get_text(url: str, name: str, headers: dict | None = None, verify_tls: bool = True, ca_file: str = "") -> str:
+    """Bounded text fetch (e.g. Prometheus /metrics)."""
+    return _get(url, name, headers or {}, verify_tls, ca_file).decode("utf-8", "replace")
+
+
+def _get(url: str, name: str, headers: dict, verify_tls: bool, ca_file: str) -> bytes:
+    if urllib.parse.urlsplit(url).scheme not in ("http", "https"):  # no file://, ftp://, ...
+        raise HttpError(f"{name}: URL must start with http:// or https://")
+    request = urllib.request.Request(url, headers=headers)
     deadline = time.monotonic() + TIMEOUT_S
     try:
         with _opener(verify_tls, ca_file).open(request, timeout=TIMEOUT_S) as response:
@@ -111,4 +125,4 @@ def get_json(url: str, name: str, headers: dict | None = None, verify_tls: bool 
         raise HttpError(f"{name}: {reason}") from None
     except ValueError:  # e.g. invalid header value: never echo it (it holds the token)
         raise HttpError(f"{name}: invalid request (check URL/token characters)") from None
-    return decode(body, name)
+    return body
