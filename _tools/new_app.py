@@ -12,10 +12,12 @@ import shutil
 import sys
 from pathlib import Path
 
+from sync_shared import add_modules
 from validate_catalog import DIR_NAME_RE
 
 ROOT = Path(__file__).resolve().parents[1]
 APP_ID_PREFIX = "io.github.joshuaaferguson"
+STARTER_MODULES = ["ui", "font", "applog"]
 
 
 def scaffold(dir_name: str, display_name: str) -> Path:
@@ -25,6 +27,15 @@ def scaffold(dir_name: str, display_name: str) -> Path:
     if target.exists():
         raise ValueError(f"{target} already exists")
     shutil.copytree(ROOT / "_template", target)
+    try:
+        _personalize(target, dir_name, display_name)
+    except Exception:
+        shutil.rmtree(target, ignore_errors=True)  # don't leave a half-built App behind
+        raise
+    return target
+
+
+def _personalize(target: Path, dir_name: str, display_name: str) -> None:
     manifest_path = target / "app.json"
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     updated = {
@@ -34,7 +45,7 @@ def scaffold(dir_name: str, display_name: str) -> Path:
         "create_time": datetime.date.today().isoformat(),
     }
     manifest_path.write_text(json.dumps(updated, indent=2) + "\n", encoding="utf-8")
-    return target
+    add_modules(ROOT, dir_name, STARTER_MODULES)
 
 
 def main(argv: list[str]) -> int:

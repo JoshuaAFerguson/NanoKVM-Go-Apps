@@ -1,0 +1,26 @@
+{
+  "app_id": "io.github.joshuaaferguson.macro_pad",
+  "name": "Macro Pad",
+  "creator": "Joshua Ferguson",
+  "create_time": "2026-10-16",
+  "version": "0.2.0",
+  "desc": "Touch buttons for key combos, BIOS/boot keys, and text on the KVM target.",
+  "category": "tools",
+  "env": {
+    "NANOKVM_MCP_KEY": {
+      "label": "NanoKVM MCP API key",
+      "description": "Enable MCP in Settings, then paste the API key shown there.",
+      "required": true,
+      "secret": true
+    },
+    "DEFAULT_PROFILE": {
+      "label": "Default profile",
+      "description": "Windows, macOS, Linux, Mobile, Nav, or a custom profile name. The last used profile wins after first launch.",
+      "default": "Windows"
+    },
+    "CUSTOM_MACROS": {
+      "label": "Custom macros (JSON)",
+      "description": "Optional. A list of macros, or an object of named lists. See the App README for the format."
+    }
+  }
+}

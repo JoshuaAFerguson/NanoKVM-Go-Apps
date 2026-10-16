@@ -21,3 +21,7 @@ dist/
 # Secrets - App config belongs in app.json "env", set on the device
 .env
 .env.*
+
+# On-device runtime files (if copied back from a device)
+log.txt
+.state.json

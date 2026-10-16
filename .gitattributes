@@ -8,4 +8,5 @@
 # export-ignore. Dev-only paths are left out to keep each Store fetch small.
 /_tools export-ignore
 /_template export-ignore
+/_shared export-ignore
 /.github export-ignore
