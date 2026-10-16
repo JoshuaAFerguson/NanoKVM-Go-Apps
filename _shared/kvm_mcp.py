@@ -11,12 +11,13 @@ from __future__ import annotations
 
 import http.client
 import json
-import ssl
 import threading
 import urllib.error
 import urllib.parse
 import urllib.request
 from typing import Any, Callable
+
+import localtls
 
 DEFAULT_URL = "https://127.0.0.1/api/mcp"
 LOOPBACK_HOSTS = ("127.0.0.1", "localhost", "::1")
@@ -44,13 +45,12 @@ class _NoRedirect(urllib.request.HTTPRedirectHandler):
         raise urllib.error.HTTPError(req.full_url, code, "redirect refused", headers, fp)
 
 
-# The device's own MCP server uses a self-signed certificate. Verification is
-# skipped only for loopback, where traffic never leaves the device: KvmMcp
-# refuses non-loopback URLs with this transport, proxies from the environment
-# are ignored, and redirects are refused so the bearer key can't be forwarded.
+# Loopback only (KvmMcp refuses other URLs with this transport), the device's
+# own certificate pinned (localtls), env proxies ignored, and redirects refused
+# so the bearer key can't be forwarded.
 _OPENER = urllib.request.build_opener(
     urllib.request.ProxyHandler({}),
-    urllib.request.HTTPSHandler(context=ssl._create_unverified_context()),
+    urllib.request.HTTPSHandler(context=localtls.context()),
     _NoRedirect(),
 )
 
