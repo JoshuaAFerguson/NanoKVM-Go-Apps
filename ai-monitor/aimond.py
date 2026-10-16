@@ -268,6 +268,7 @@ class Daemon:
         spent, local = self.poller.snapshot()
         return {
             "listening": self.listening, "bind_error": self.bind_error, "fingerprint": self.fingerprint,
+            "token_from_setting": len((self.env.get("AGENT_TOKEN") or "").strip()) >= MIN_TOKEN_LEN,
             "agents": [{"machine": s.machine, "session": s.session[:8], "state": s.state, "project": s.project,
                         "message": s.message, "since": s.since} for s in sessions[:20]],
             "agent_counts": counts, "mcp": mcp,

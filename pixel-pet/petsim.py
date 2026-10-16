@@ -221,11 +221,25 @@ def advance(pet: Pet, now: float, env: Env, open_app: bool, tend: bool = False) 
     return Pet(**state)
 
 
+STUFFED = 95.0
+
+
+def refuses(pet: Pet, action: str) -> bool:
+    """The pet says no (it still reacts, e.g. a stuffed pet gets a bit grumpy)."""
+    if pet.stage == "egg":
+        return True
+    if action == "feed":
+        return pet.fullness >= STUFFED
+    if action == "play":
+        return pet.asleep or pet.energy < 10
+    return False
+
+
 def act(pet: Pet, action: str, now: float) -> Pet:
     if pet.stage == "egg":
         return pet
     if action == "feed":
-        if pet.fullness >= 95:  # stuffed: refuses, a bit grumpy
+        if pet.fullness >= STUFFED:  # stuffed: refuses, a bit grumpy
             return replace(pet, happiness=_clamp(pet.happiness - 5))
         return replace(pet, fullness=_clamp(pet.fullness + 30), asleep=False)
     if action == "play":

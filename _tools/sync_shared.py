@@ -13,6 +13,7 @@ Usage:
 
 from __future__ import annotations
 
+import re
 import shutil
 import sys
 from pathlib import Path
@@ -45,16 +46,38 @@ def sync(root: Path) -> list[Path]:
     return stale
 
 
-def add_modules(root: Path, app: str, names: list[str]) -> None:
+IMPORT_RE = re.compile(r"^\s*(?:import|from)\s+([A-Za-z_][A-Za-z0-9_]*)", re.MULTILINE)
+
+
+def with_dependencies(modules: dict[str, Path], filenames: list[str]) -> list[str]:
+    """filenames plus every shared module they import, transitively (e.g. ui -> font)."""
+    out, todo = [], list(filenames)
+    while todo:
+        filename = todo.pop(0)
+        if filename in out:
+            continue
+        out.append(filename)
+        for name in IMPORT_RE.findall(modules[filename].read_text(encoding="utf-8")):
+            if f"{name}.py" in modules and f"{name}.py" not in out:
+                todo.append(f"{name}.py")
+    return out
+
+
+def add_modules(root: Path, app: str, names: list[str]) -> list[str]:
     modules = shared_modules(root)
     app_dir = root / app
     if app_dir not in iter_app_dirs(root):
         raise ValueError(f"'{app}' is not an App directory in {root}")
+    filenames = []
     for name in names:
         filename = name if name.endswith(".py") else f"{name}.py"
         if filename not in modules:
             raise ValueError(f"no shared module '{filename}' (have: {', '.join(modules)})")
+        filenames.append(filename)
+    added = with_dependencies(modules, filenames)
+    for filename in added:
         shutil.copyfile(modules[filename], app_dir / filename)
+    return added
 
 
 def main(argv: list[str]) -> int:
@@ -63,8 +86,8 @@ def main(argv: list[str]) -> int:
             if len(argv) < 4:
                 print(__doc__, file=sys.stderr)
                 return 2
-            add_modules(ROOT, argv[2], argv[3:])
-            print(f"Added {', '.join(argv[3:])} to {argv[2]}")
+            added = add_modules(ROOT, argv[2], argv[3:])
+            print(f"Added {', '.join(added)} to {argv[2]}")
             return 0
         if len(argv) > 1 and argv[1] == "--check":
             stale = find_drift(ROOT)

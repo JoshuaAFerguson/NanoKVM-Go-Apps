@@ -45,7 +45,7 @@ RestrictRealtime=yes
 LockPersonality=yes
 MemoryDenyWriteExecute=yes
 SystemCallArchitectures=native
-RestrictAddressFamilies=AF_INET AF_UNIX AF_NETLINK
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX AF_NETLINK
 # SO_BINDTODEVICE needs CAP_NET_RAW on older kernels
 CapabilityBoundingSet=CAP_NET_RAW
 TasksMax=40

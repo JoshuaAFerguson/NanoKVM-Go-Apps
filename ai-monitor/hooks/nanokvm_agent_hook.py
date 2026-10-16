@@ -67,8 +67,8 @@ def _state_dir() -> None:
     """Create the state dir and refuse it unless it's a real 0700 directory we own."""
     os.makedirs(STATE_DIR, mode=0o700, exist_ok=True)
     st = os.lstat(STATE_DIR)
-    if not stat.S_ISDIR(st.st_mode) or (hasattr(os, "getuid") and st.st_uid != os.getuid()) \
-            or stat.S_IMODE(st.st_mode) & 0o077:
+    posix = os.name == "posix"  # Windows reports 0o777 for private dirs; its ACLs come from makedirs
+    if not stat.S_ISDIR(st.st_mode) or (posix and (st.st_uid != os.getuid() or stat.S_IMODE(st.st_mode) & 0o077)):
         raise OSError("unsafe hook state directory")
 
 

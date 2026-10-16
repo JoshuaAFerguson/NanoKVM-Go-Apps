@@ -242,5 +242,15 @@ class MotionTest(unittest.TestCase):
         self.assertGreater(max(p.lift for p in poses), 8)
 
 
+class RefusalTest(unittest.TestCase):
+    def test_stuffed_pet_refuses_food(self):
+        import petsim
+        pet = petsim.Pet(name="P", stage="baby", fullness=97.0)
+        self.assertTrue(petsim.refuses(pet, "feed"))
+        self.assertFalse(petsim.refuses(petsim.Pet(name="P", stage="baby", fullness=50.0), "feed"))
+        self.assertTrue(petsim.refuses(petsim.Pet(name="P", stage="baby", asleep=True), "play"))
+        self.assertFalse(petsim.refuses(pet, "clean"))
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -62,35 +62,53 @@ def lookup(keysym: int) -> tuple[int, bool] | None:
 
 
 class Keyboard:
-    """Tracks held keys and builds boot-keyboard reports from VNC key events."""
+    """Tracks held keys and builds boot-keyboard reports from VNC key events.
+
+    Several VNC clients share one physical keyboard, so each held key and
+    modifier remembers which clients (owners) hold it: it is released only when
+    the last of them lets go.
+    """
 
     def __init__(self) -> None:
-        self.modifiers = 0
-        self.pressed: list[tuple[int, bool]] = []  # (usage, needs_shift) in press order
+        self._mods: dict[int, set] = {}             # modifier bit -> owners
+        self._keys: dict[int, tuple[bool, set]] = {}  # usage -> (needs_shift, owners), in press order
+
+    @property
+    def modifiers(self) -> int:
+        bits = 0
+        for bit, owners in self._mods.items():
+            if owners:
+                bits |= bit
+        return bits
+
+    @property
+    def pressed(self) -> list[tuple[int, bool]]:
+        return [(usage, shift) for usage, (shift, _) in self._keys.items()]
 
     def _report(self) -> bytes:
         mods = self.modifiers
-        if any(shift for _, shift in self.pressed) and not mods & (SHIFT_BIT | 0x20):
+        if any(shift for shift, _ in self._keys.values()) and not mods & (SHIFT_BIT | 0x20):
             mods |= SHIFT_BIT
-        keys = [usage for usage, _ in self.pressed][:MAX_KEYS]
+        keys = list(self._keys)[:MAX_KEYS]
         return bytes([mods, 0] + keys + [0] * (MAX_KEYS - len(keys)))
 
-    def event(self, keysym: int, down: bool) -> bytes | None:
+    def event(self, keysym: int, down: bool, owner=None) -> bytes | None:
         """Report to write for this event, or None if the keysym isn't mapped."""
         bit = modifier_bit(keysym)
         if bit is not None:
-            self.modifiers = self.modifiers | bit if down else self.modifiers & ~bit
+            owners = self._mods.get(bit, set())
+            self._mods[bit] = owners | {owner} if down else owners - {owner}
             return self._report()
         mapped = lookup(keysym)
         if mapped is None:
             return None
-        usage, needs_shift = mapped
-        self.pressed = [p for p in self.pressed if p[0] != usage]  # release matches by usage, not case
-        if down:
-            self.pressed.append((usage, needs_shift))
+        usage, needs_shift = mapped  # release matches by usage, not case
+        _, owners = self._keys.pop(usage, (needs_shift, set()))
+        owners = owners | {owner} if down else owners - {owner}
+        if owners:
+            self._keys[usage] = (needs_shift, owners)  # (re)press moves it to the end
         return self._report()
 
     def release_all(self) -> bytes:
-        self.modifiers = 0
-        self.pressed = []
+        self._mods, self._keys = {}, {}
         return bytes(8)

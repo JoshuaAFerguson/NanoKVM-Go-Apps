@@ -83,6 +83,15 @@ class LocalServer(ThreadingHTTPServer):
         self.server_name, self.server_port = "localhost", self.server_address[1]
 
 
+class KvmWebCloseTest(unittest.TestCase):
+    def test_no_power_press_after_close(self):
+        web = KvmWeb("admin", "pw", base_url="https://127.0.0.1:1")
+        web.close()
+        with self.assertRaisesRegex(KvmWebError, "closing"):
+            web.power_press(0.1)
+        self.assertFalse(web.held)
+
+
 class KvmWebTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):

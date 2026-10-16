@@ -159,7 +159,8 @@ class CollectorRestartTest(unittest.TestCase):
         self.patches = {
             "find_pid": lambda name: 489,
             "read_hdmi": lambda: probes.Hdmi(False),
-            "read_text": lambda path, default="": "kvm_vin\n" if path.endswith("comm") else default,
+            "read_text": lambda path, default="": "kvm_vin\n" if path.endswith("comm")
+            else "489 (kvm_vin) S 1 489 489 0 -1 4194560 100 0 0 0 50 10 0 0 20 0 3 0 777 0 0" if path.endswith("stat") else default,
         }
         self.saved = {k: getattr(probes, k) for k in self.patches}
         for k, v in self.patches.items():
@@ -174,8 +175,26 @@ class CollectorRestartTest(unittest.TestCase):
 
     def make(self, cpu):
         c = self.collector_mod.Collector(log=lambda m: None)
-        c._fresh_vin_cpu = lambda: cpu
+        c._fresh_vin_cpu = lambda: (489, "777", cpu)
         return c
+
+    def test_does_not_kill_a_replacement_process(self):
+        c = self.collector_mod.Collector(log=lambda m: None)
+        c._fresh_vin_cpu = lambda: (489, "555", 99)  # measured process had another start time
+        msg = c.restart_video_service()
+        self.assertEqual(self.killed, [])
+        self.assertIn("changed", msg.lower())
+
+    def test_rechecks_video_after_measuring(self):
+        c = self.collector_mod.Collector(log=lambda m: None)
+
+        def measure():
+            probes.read_hdmi = lambda: probes.Hdmi(True, 1920, 1080, 60)  # signal returns meanwhile
+            return 489, "777", 99
+        c._fresh_vin_cpu = measure
+        msg = c.restart_video_service()
+        self.assertEqual(self.killed, [])
+        self.assertIn("back", msg.lower())
 
     def test_kills_when_still_stuck(self):
         msg = self.make(cpu=99).restart_video_service()
