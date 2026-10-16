@@ -1,0 +1,98 @@
+{
+  "app_id": "io.github.joshuaaferguson.homelab_glance",
+  "name": "Homelab Glance",
+  "creator": "Joshua Ferguson",
+  "create_time": "2026-10-16",
+  "version": "0.1.0",
+  "desc": "Home Assistant, Uptime Kuma, Proxmox, Prometheus, Kubernetes and Docker status at a glance.",
+  "category": "tools",
+  "env": {
+    "HA_URL": {
+      "label": "Home Assistant URL",
+      "description": "e.g. http://192.168.0.20:8123 - leave empty to hide"
+    },
+    "HA_TOKEN": {
+      "label": "Home Assistant token",
+      "description": "Long-lived access token (Profile > Security)",
+      "secret": true
+    },
+    "HA_ENTITIES": {
+      "label": "Home Assistant entities",
+      "description": "Comma-separated entity IDs, up to 12, e.g. sensor.living_temp, light.desk"
+    },
+    "HA_CA_FILE": {
+      "label": "HA: CA certificate file",
+      "description": "Optional path on the device to a PEM CA that signed the service's certificate (safer than *_INSECURE)"
+    },
+    "KUMA_URL": {
+      "label": "Uptime Kuma URL",
+      "description": "e.g. http://192.168.0.21:3001 - leave empty to hide"
+    },
+    "KUMA_SLUG": {
+      "label": "Uptime Kuma status page",
+      "description": "Slug of a public status page, e.g. home"
+    },
+    "PVE_URL": {
+      "label": "Proxmox URL",
+      "description": "e.g. https://192.168.0.30:8006 - leave empty to hide"
+    },
+    "PVE_TOKEN": {
+      "label": "Proxmox API token",
+      "description": "user@realm!tokenid=secret (role PVEAuditor is enough)",
+      "secret": true
+    },
+    "PVE_INSECURE": {
+      "label": "Proxmox: allow self-signed TLS",
+      "description": "true to skip certificate checks (typical for Proxmox)",
+      "default": "false"
+    },
+    "PVE_CA_FILE": {
+      "label": "PVE: CA certificate file",
+      "description": "Optional path on the device to a PEM CA that signed the service's certificate (safer than *_INSECURE)"
+    },
+    "PROM_URL": {
+      "label": "Prometheus URL",
+      "description": "e.g. http://192.168.0.40:9090 - leave empty to hide"
+    },
+    "PROM_QUERIES": {
+      "label": "Prometheus queries",
+      "description": "Label=PromQL; Label=PromQL (up to 6). Default: targets up / total"
+    },
+    "PROM_TOKEN": {
+      "label": "Prometheus bearer token",
+      "description": "Optional",
+      "secret": true
+    },
+    "K8S_URL": {
+      "label": "Kubernetes API URL",
+      "description": "e.g. https://192.168.0.50:6443 - leave empty to hide"
+    },
+    "K8S_TOKEN": {
+      "label": "Kubernetes token",
+      "description": "ServiceAccount token with the read-only 'view' ClusterRole",
+      "secret": true
+    },
+    "K8S_INSECURE": {
+      "label": "Kubernetes: allow self-signed TLS",
+      "description": "true to skip certificate checks",
+      "default": "false"
+    },
+    "K8S_CA_FILE": {
+      "label": "K8S: CA certificate file",
+      "description": "Optional path on the device to a PEM CA that signed the service's certificate (safer than *_INSECURE)"
+    },
+    "DOCKER_URL": {
+      "label": "Docker API URL",
+      "description": "e.g. http://192.168.0.60:2375 via docker-socket-proxy (read-only) - leave empty to hide"
+    },
+    "DOCKER_CA_FILE": {
+      "label": "DOCKER: CA certificate file",
+      "description": "Optional path on the device to a PEM CA that signed the service's certificate (safer than *_INSECURE)"
+    },
+    "REFRESH_S": {
+      "label": "Refresh interval (s)",
+      "description": "10 to 3600",
+      "default": "30"
+    }
+  }
+}

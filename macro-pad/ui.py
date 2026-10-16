@@ -188,3 +188,15 @@ def draw_header(fb, box: Box, title: str, right: str = "", color: int = ACCENT) 
     text(fb, box.x + 8, box.cy - GLYPH_PX * scale // 2 - 1, title, TEXT, scale)
     if right:
         text(fb, box.x + box.w - right_w + 8, box.cy - GLYPH_PX // 2 - 1, right, TEXT_DIM, 1)
+
+
+def draw_stat_tile(fb, box: Box, label: str, value: str, detail: str, accent: int,
+                   value_color: int = TEXT) -> None:
+    """Dashboard tile: small label, big value (scale 2 if it fits), small detail, accent stripe."""
+    fb.fill_rect(box.x, box.y, box.w, box.h, SURFACE)
+    fb.fill_rect(box.x, box.y, 3, box.h, accent)
+    inner = box.inset(9, 6)
+    text(fb, inner.x, inner.y, truncate(label.upper(), inner.w), TEXT_DIM, 1)
+    value_scale = 2 if font.text_width(value, 2) <= inner.w else 1
+    text(fb, inner.x, inner.cy - 4 * value_scale + 1, truncate(value, inner.w, value_scale), value_color, value_scale)
+    text(fb, inner.x, inner.y + inner.h - GLYPH_PX, truncate(detail, inner.w), TEXT_DIM, 1)

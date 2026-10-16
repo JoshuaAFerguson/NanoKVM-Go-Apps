@@ -35,6 +35,7 @@ treats every top-level directory as an App. That means:
 | [`macro-pad`](macro-pad/) | Touch buttons for key combos, BIOS/boot keys and text on the target. Profiles for Windows, macOS, Linux, mobile, plus your own. Needs the MCP key. |
 | [`kvm-status`](kvm-status/) | Dashboard: target video/USB, Wi-Fi, IPs, CPU, temperature, memory. Detects and fixes a stuck video service. |
 | [`wol-panel`](wol-panel/) | Wake-on-LAN: tap a machine to wake it, with live online/offline status. |
+| [`homelab-glance`](homelab-glance/) | Home Assistant, Uptime Kuma, Proxmox, Prometheus, Kubernetes and Docker status with drill-down. |
 | [`hello-nanokvm`](hello-nanokvm/) | Smoke test: confirms this Store installs and runs Apps. |
 
 ## Repository layout

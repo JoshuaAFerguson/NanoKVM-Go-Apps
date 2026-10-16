@@ -29,15 +29,9 @@ LEVEL_COLORS = {Level.OK: ui.OK, Level.WARN: ui.WARN, Level.ERR: ui.ERR}
 
 
 def draw_tile(fb, box: ui.Box, tile: Tile) -> None:
-    fb.fill_rect(box.x, box.y, box.w, box.h, ui.SURFACE)
-    fb.fill_rect(box.x, box.y, 3, box.h, LEVEL_COLORS[tile.level])
-    inner = box.inset(9, 6)
-    ui.text(fb, inner.x, inner.y, tile.label.upper(), ui.TEXT_DIM, 1)
-    value_scale = 2 if len(tile.value) * 16 <= inner.w else 1
-    value_y = inner.cy - 4 * value_scale + 1
-    color = ui.TEXT if tile.level == Level.OK else LEVEL_COLORS[tile.level]
-    ui.text(fb, inner.x, value_y, tile.value, color, value_scale)
-    ui.text(fb, inner.x, inner.y + inner.h - 8, ui.truncate(tile.detail, inner.w), ui.TEXT_DIM, 1)
+    color = LEVEL_COLORS[tile.level]
+    ui.draw_stat_tile(fb, box, tile.label, tile.value, tile.detail, color,
+                      ui.TEXT if tile.level == Level.OK else color)
 
 
 class StatusScreen:
