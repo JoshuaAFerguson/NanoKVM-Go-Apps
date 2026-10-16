@@ -34,6 +34,7 @@ treats every top-level directory as an App. That means:
 | --- | --- |
 | [`macro-pad`](macro-pad/) | Touch buttons for key combos, BIOS/boot keys and text on the target. Profiles for Windows, macOS, Linux, mobile, plus your own. Needs the MCP key. |
 | [`kvm-status`](kvm-status/) | Dashboard: target video/USB, Wi-Fi, IPs, CPU, temperature, memory. Detects and fixes a stuck video service. |
+| [`wol-panel`](wol-panel/) | Wake-on-LAN: tap a machine to wake it, with live online/offline status. |
 | [`hello-nanokvm`](hello-nanokvm/) | Smoke test: confirms this Store installs and runs Apps. |
 
 ## Repository layout
@@ -46,6 +47,7 @@ treats every top-level directory as an App. That means:
 ├── _shared/                # code shared by Apps, copied into each App that uses it
 │   ├── kvm_mcp.py          # client for the device's MCP server (keyboard, mouse, screenshot)
 │   ├── ui.py               # layout, palette, buttons, headers
+│   ├── netinfo.py          # interface IP/netmask via ioctl
 │   ├── font.py             # 8x8 font with lowercase + punctuation, fast renderer
 │   └── applog.py           # log.txt in the App dir (launcher discards stdout/stderr)
 ├── _template/              # starter App copied by _tools/new_app.py

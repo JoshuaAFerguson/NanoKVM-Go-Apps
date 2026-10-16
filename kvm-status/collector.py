@@ -10,6 +10,7 @@ import threading
 import time
 from typing import Callable
 
+import netinfo
 import probes
 from tiles import Snapshot
 
@@ -145,8 +146,8 @@ class Collector:
             usb_state=probes.read_usb_state(),
             usb_speed="" if udc_speed == "UNKNOWN" else udc_speed,
             wifi=self._wifi,
-            lan_ip=probes.interface_ipv4("wlan0") or probes.interface_ipv4("eth0"),
-            tailscale_ip=probes.interface_ipv4("tailscale0"),
+            lan_ip=netinfo.interface_ipv4("wlan0") or netinfo.interface_ipv4("eth0"),
+            tailscale_ip=netinfo.interface_ipv4("tailscale0"),
             cpu=cpu,
             temp_c=probes.read_temp_c(),
             load=probes.first_number(probes.read_text("/proc/loadavg")),
