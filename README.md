@@ -40,6 +40,7 @@ treats every top-level directory as an App. That means:
 | [`vnc-bridge`](vnc-bridge/) | VNC server for the target (Tight JPEG passthrough, real USB keyboard/mouse). Works with TigerVNC, Remmina, noVNC, Guacamole. |
 | [`text-alert`](text-alert/) | **Go+ only.** Notifies when a phrase (e.g. "Build succeeded", "Kernel panic") appears on the target's screen, via on-device OCR. |
 | [`media-power`](media-power/) | Mount ISO images on the virtual drive and press the target's power button (Finger Robot) from the touchscreen. Needs the web login. |
+| [`pixel-pet`](pixel-pet/) | A Tamagotchi-style pixel pet that grows into one of three forms, never dies, and notices what the KVM is doing. |
 | [`hello-nanokvm`](hello-nanokvm/) | Smoke test: confirms this Store installs and runs Apps. |
 
 ## Repository layout

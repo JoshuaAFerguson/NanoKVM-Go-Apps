@@ -1,0 +1,12 @@
+{
+  "app_id": "io.github.joshuaaferguson.pixel_pet",
+  "name": "Pixel Pet",
+  "creator": "Joshua Ferguson",
+  "create_time": "2026-10-16",
+  "version": "0.1.0",
+  "desc": "A Tamagotchi-style pixel blob that lives on your KVM. Feed it, play with it, watch it grow.",
+  "category": "fun",
+  "env": {
+    "PET_NAME": {"label": "Pet name", "description": "Up to 12 characters", "default": "Blip"}
+  }
+}
