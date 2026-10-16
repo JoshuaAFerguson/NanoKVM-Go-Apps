@@ -33,6 +33,7 @@ treats every top-level directory as an App. That means:
 | App | Description |
 | --- | --- |
 | [`macro-pad`](macro-pad/) | Touch buttons for key combos, BIOS/boot keys and text on the target. Profiles for Windows, macOS, Linux, mobile, plus your own. Needs the MCP key. |
+| [`kvm-status`](kvm-status/) | Dashboard: target video/USB, Wi-Fi, IPs, CPU, temperature, memory. Detects and fixes a stuck video service. |
 | [`hello-nanokvm`](hello-nanokvm/) | Smoke test: confirms this Store installs and runs Apps. |
 
 ## Repository layout
