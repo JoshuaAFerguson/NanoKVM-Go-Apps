@@ -39,6 +39,7 @@ treats every top-level directory as an App. That means:
 | [`screen-watcher`](screen-watcher/) | Background alerts (ntfy, Discord, Pushover, Home Assistant) when the target loses video, blue-screens, goes black or freezes. |
 | [`vnc-bridge`](vnc-bridge/) | VNC server for the target (Tight JPEG passthrough, real USB keyboard/mouse). Works with TigerVNC, Remmina, noVNC, Guacamole. |
 | [`text-alert`](text-alert/) | **Go+ only.** Notifies when a phrase (e.g. "Build succeeded", "Kernel panic") appears on the target's screen, via on-device OCR. |
+| [`media-power`](media-power/) | Mount ISO images on the virtual drive and press the target's power button (Finger Robot) from the touchscreen. Needs the web login. |
 | [`hello-nanokvm`](hello-nanokvm/) | Smoke test: confirms this Store installs and runs Apps. |
 
 ## Repository layout
@@ -52,6 +53,7 @@ treats every top-level directory as an App. That means:
 │   ├── kvm_mcp.py          # client for the device's MCP server (keyboard, mouse, screenshot)
 │   ├── ui.py               # layout, palette, buttons, headers
 │   ├── netinfo.py          # interface IP/netmask via ioctl
+│   ├── localtls.py         # pinned TLS for the device's own HTTPS server
 │   ├── font.py             # 8x8 font with lowercase + punctuation, fast renderer
 │   ├── applog.py           # log.txt in the App dir (launcher discards stdout/stderr)
 │   ├── appdata.py          # persistent data in /var/lib/nanokvm-apps (survives updates)

@@ -1,0 +1,22 @@
+{
+  "app_id": "io.github.joshuaaferguson.media_power",
+  "name": "Media & Power",
+  "creator": "Joshua Ferguson",
+  "create_time": "2026-10-16",
+  "version": "0.1.0",
+  "desc": "Mount ISO images on the KVM's virtual drive and press the target's power button (Finger Robot) from the touchscreen.",
+  "category": "tools",
+  "env": {
+    "KVM_USERNAME": {
+      "label": "KVM web username",
+      "description": "Same login as the KVM's web page",
+      "default": "admin"
+    },
+    "KVM_PASSWORD": {
+      "label": "KVM web password",
+      "description": "Stored in this App's settings on the device (plain text, root-only)",
+      "required": true,
+      "secret": true
+    }
+  }
+}
