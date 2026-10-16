@@ -122,17 +122,21 @@ class HookMappingTest(unittest.TestCase):
             sys.stdin = saved
 
     def test_only_state_changes_are_sent_and_failures_back_off(self):
+        import os
         import tempfile
         with tempfile.TemporaryDirectory() as tmp:
             saved = hook.STATE_DIR
-            hook.STATE_DIR = tmp
+            hook.STATE_DIR = os.path.join(tmp, "state")
             try:
                 self.assertFalse(hook.unchanged("s1", "working", ""))
                 self.assertTrue(hook.unchanged("s1", "working", ""))      # repeat tool call: skipped
                 self.assertFalse(hook.unchanged("s1", "waiting", "perm"))  # change: sent
                 self.assertFalse(hook.backing_off())
-                open(hook._marker("failed"), "w").close()
+                hook._write(hook._marker("failed"), "")
                 self.assertTrue(hook.backing_off())
+                os.chmod(hook.STATE_DIR, 0o777)  # tampered permissions: refuse to use it
+                with self.assertRaises(OSError):
+                    hook.unchanged("s2", "idle", "")
             finally:
                 hook.STATE_DIR = saved
 

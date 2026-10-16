@@ -234,7 +234,12 @@ class Daemon:
             self.bind_error = f"no address for AI_BIND={mode} yet"
             return
         try:
-            self.server = aiserver.make_server(self.hub, address, port, server_tls(), device)
+            tls = server_tls()
+            if tls is None:  # fail closed: never relay tokens and MCP keys over plain HTTP
+                self.bind_error = f"device certificate missing ({SERVER_CERT}): not listening"
+                LOG.warn(self.bind_error)
+                return
+            self.server = aiserver.make_server(self.hub, address, port, tls, device)
         except (OSError, ssl.SSLError) as exc:
             self.bind_error = f"cannot listen on {address}:{port}: {getattr(exc, 'strerror', None) or exc}"
             LOG.warn(self.bind_error)
