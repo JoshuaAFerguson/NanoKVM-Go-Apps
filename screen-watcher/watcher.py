@@ -11,11 +11,8 @@ launcher-provided settings). Disables itself if the App is uninstalled.
 
 from __future__ import annotations
 
-import json
 import os
-import shutil
 import socket
-import subprocess
 import sys
 import time
 from pathlib import Path
@@ -23,7 +20,8 @@ from typing import Callable
 
 import appdata
 import capture
-import notify
+import servicekit
+from alerter import Alerter
 from applog import AppLog
 from rules import Observation, Rules, Settings
 
@@ -31,10 +29,7 @@ APP_DIR = Path(__file__).resolve().parent
 APP_NAME = "screen-watcher"
 UNIT = "nanokvm-screen-watcher.service"
 MIN_CHECK_S, DEFAULT_CHECK_S = 15, 30
-MAX_EVENTS = 20
-MAX_PENDING = 10
 BLIND_AFTER = 10            # consecutive capture failures before a "can't see" alert
-GONE_CHECKS, GONE_SECONDS = 3, 60   # App must be missing this long before self-removal
 MAX_LOOP_FAILURES = 20
 LOG = AppLog(APP_DIR, "service-log.txt")
 
@@ -50,18 +45,7 @@ def _float(value, default: float = 0.0) -> float:
         return default
 
 
-def resolve_env(app_dir: Path, data: Path) -> dict:
-    """Same precedence as appbase (os.environ > app.json value > default), plus the
-    env the touchscreen App last saw from the launcher (env.json) over the top."""
-    try:
-        specs = _dict(json.loads((app_dir / "app.json").read_text()).get("env"))
-    except (OSError, ValueError, AttributeError):
-        specs = {}
-    env = {name: str(os.environ.get(name, spec.get("value", spec.get("default", ""))))
-           for name, spec in specs.items() if isinstance(spec, dict)}
-    overlay = _dict(appdata.read_json(data / "env.json", {}))
-    env.update({k: v for k, v in overlay.items() if k in specs and isinstance(v, str)})
-    return env
+resolve_env = servicekit.resolve_env
 
 
 def _number(env: dict, key: str, default: float, low: float, high: float) -> float:
@@ -83,41 +67,24 @@ def device_name(env: dict) -> str:
     return (env.get("DEVICE_NAME") or "").strip()[:40] or socket.gethostname()
 
 
-def remove_self(data: Path) -> None:
-    """The App was uninstalled (there's no uninstall hook): disable the service and
-    delete its data, which includes notification secrets."""
-    LOG.info("App has been gone for a while; disabling service and deleting its data")
-    subprocess.run(["systemctl", "disable", UNIT], capture_output=True, timeout=30)
-    try:
-        Path("/etc/systemd/system", UNIT).unlink()
-    except OSError:
-        pass
-    subprocess.run(["systemctl", "daemon-reload"], capture_output=True, timeout=30)
-    shutil.rmtree(data, ignore_errors=True)
-
-
 class Service:
     def __init__(self, app_dir: Path, data: Path, observe: Callable = capture.observe,
                  hdmi: Callable[[], bool] = capture.hdmi_signal, clock: Callable[[], float] = time.monotonic,
                  wall: Callable[[], float] = time.time, remover: Callable[[], None] | None = None) -> None:
         self.app_dir, self.data = app_dir, data
         self._observe, self._hdmi, self._clock, self._wall = observe, hdmi, clock, wall
-        self._remover = remover or (lambda: remove_self(data))
+        self._remover = remover or (lambda: servicekit.remove_service(UNIT, data, LOG.info))
         self.status = _dict(appdata.read_json(data / "status.json", {}))
-        self.events = [e for e in self.status.get("events", []) if isinstance(e, dict)][-MAX_EVENTS:]
-        self.pending: list[dict] = [p for p in self.status.get("pending", []) if isinstance(p, dict)][-MAX_PENDING:]
+        self.alerter = Alerter(LOG.info, wall, self.status.get("events"), self.status.get("pending"))
         self.rules = Rules(Settings())
         self.rules.restore(self.status.get("rules", {}), clock())
-        self.notifier: notify.Notifier | None = None
-        self.config_error = ""
         self.check_s = DEFAULT_CHECK_S
         self.sleep_s = DEFAULT_CHECK_S
         self.env_stamp = None
         self.failures = 0
         self.blind_alerted = False
         self.was_paused = False
-        self.gone_since: float | None = None
-        self.gone_count = 0
+        self.presence = servicekit.AppPresence(app_dir, "watcher.py", clock)
 
     # -- configuration -------------------------------------------------------
 
@@ -134,46 +101,25 @@ class Service:
         env = resolve_env(self.app_dir, self.data)
         settings, self.check_s = settings_from(env)
         self.rules.settings = settings  # keep detection state across settings changes
-        try:
-            self.notifier = notify.Notifier(notify.load_channels(env), device=device_name(env))
-            self.config_error = ""
-        except (notify.NotifyError, ValueError) as exc:
-            self.notifier, self.config_error = None, str(exc)
-            LOG.warn(f"notification settings: {exc}")
+        self.alerter.configure({**env, "DEVICE_NAME": device_name(env)})
         LOG.info(f"config loaded: check every {self.check_s:g}s, {settings}")
 
-    # -- notifications -------------------------------------------------------------
+    # -- compatibility accessors (tests, status) --------------------------------
 
-    def _send(self, title: str, message: str, level: str) -> tuple[bool, str]:
-        if self.notifier is None or not self.notifier.channels:
-            return False, self.config_error or "no notification channels configured"
-        results = self.notifier.send(title, message, level)
-        summary = ", ".join(f"{k} {v}" for k, v in results.items())
-        LOG.info(f"notify '{title}': {summary}")
-        return notify.delivered(results), summary
+    @property
+    def notifier(self):
+        return self.alerter.notifier
 
-    def record(self, title: str, level: str, result: str) -> None:
-        self.events.append({"t": self._wall(), "title": title, "level": level, "result": result})
-        self.events = self.events[-MAX_EVENTS:]
+    @notifier.setter
+    def notifier(self, value) -> None:
+        self.alerter.notifier = value
+
+    @property
+    def pending(self) -> list:
+        return self.alerter.pending
 
     def emit(self, title: str, message: str, level: str, paused: bool) -> None:
-        if paused:
-            self.record(title, level, "paused - not sent")
-            return
-        ok, summary = self._send(title, message, level)
-        self.record(title, level, summary)
-        if not ok and level == "alert":
-            self.pending = (self.pending + [{"title": title, "message": message, "level": level}])[-MAX_PENDING:]
-
-    def retry_pending(self) -> None:
-        still = []
-        for item in self.pending:
-            ok, summary = self._send(item["title"], item["message"] + " (delayed)", item["level"])
-            if ok:
-                self.record(item["title"] + " (retried)", item["level"], summary)
-            else:
-                still.append(item)
-        self.pending = still
+        self.alerter.emit(title, message, level, paused)
 
     # -- one check -----------------------------------------------------------------
 
@@ -182,8 +128,8 @@ class Service:
         control = _dict(appdata.read_json(self.data / "control.json", {}))
         test_id = control.get("test_id")
         if isinstance(test_id, str) and test_id and test_id != self.status.get("test_done"):
-            ok, summary = self._send("Test alert", "Screen Watcher notifications are working.", "info")
-            self.record("Test alert", "info", summary)
+            ok, summary = self.alerter.send("Test alert", "Screen Watcher notifications are working.", "info")
+            self.alerter.record("Test alert", "info", summary)
             self.status["test_done"] = test_id
         paused = _float(control.get("paused_until")) > self._wall()
         if self.was_paused and not paused and self.rules.active():
@@ -197,7 +143,7 @@ class Service:
         self.reload()
         paused = self.handle_control()
         if not paused:
-            self.retry_pending()
+            self.alerter.retry_pending()
         started = self._clock()
         error, decode_s = "", 0.0
         try:
@@ -227,9 +173,9 @@ class Service:
         self.status.update({
             "heartbeat": self._wall(), "signal": obs.signal, "resolution": [obs.width, obs.height],
             "mean_rgb": mean, "active": self.rules.active(), "rules": self.rules.snapshot(),
-            "events": self.events, "pending": self.pending, "error": error, "config_error": self.config_error,
-            "check_s": self.check_s, "decode_ms": round(decode_s * 1000),
-            "channels": [c.kind for c in self.notifier.channels] if self.notifier else [], "pid": os.getpid(),
+            "events": self.alerter.events, "pending": self.alerter.pending, "error": error,
+            "config_error": self.alerter.config_error, "check_s": self.check_s, "decode_ms": round(decode_s * 1000),
+            "channels": self.alerter.channels, "pid": os.getpid(),
         })
         # Heartbeat-only data: no fsync, to spare the flash.
         appdata.write_json(self.data / "status.json", self.status, durable=False)
@@ -237,17 +183,7 @@ class Service:
     # -- lifecycle ------------------------------------------------------------------
 
     def app_gone(self) -> bool:
-        """True only after the App has been missing for GONE_CHECKS checks and
-        GONE_SECONDS, so a Store update (remove + re-extract) is never mistaken
-        for an uninstall."""
-        missing = not (self.app_dir / "app.json").exists() and not (self.app_dir / "watcher.py").exists()
-        if not missing:
-            self.gone_since, self.gone_count = None, 0
-            return False
-        now = self._clock()
-        self.gone_since = now if self.gone_since is None else self.gone_since
-        self.gone_count += 1
-        return self.gone_count >= GONE_CHECKS and now - self.gone_since >= GONE_SECONDS
+        return self.presence.gone()
 
     def run(self) -> int:
         LOG.info(f"service started (pid {os.getpid()})")
@@ -268,19 +204,7 @@ class Service:
             self._wait(max(1.0, self.sleep_s))
 
     def _wait(self, seconds: float) -> None:
-        """Sleep, but wake early when the App writes control.json (test button)."""
-        control = self.data / "control.json"
-
-        def stamp() -> float:
-            try:
-                return control.stat().st_mtime
-            except OSError:
-                return 0.0
-        before, end = stamp(), time.monotonic() + seconds
-        while time.monotonic() < end:
-            time.sleep(1.0)
-            if stamp() != before:
-                return
+        servicekit.wait(seconds, self.data)  # wakes early when the App writes control.json
 
 
 def main() -> int:

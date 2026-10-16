@@ -37,6 +37,8 @@ treats every top-level directory as an App. That means:
 | [`wol-panel`](wol-panel/) | Wake-on-LAN: tap a machine to wake it, with live online/offline status. |
 | [`homelab-glance`](homelab-glance/) | Home Assistant, Uptime Kuma, Proxmox, Prometheus, Kubernetes and Docker status with drill-down. |
 | [`screen-watcher`](screen-watcher/) | Background alerts (ntfy, Discord, Pushover, Home Assistant) when the target loses video, blue-screens, goes black or freezes. |
+| [`vnc-bridge`](vnc-bridge/) | VNC server for the target (Tight JPEG passthrough, real USB keyboard/mouse). Works with TigerVNC, Remmina, noVNC, Guacamole. |
+| [`text-alert`](text-alert/) | **Go+ only.** Notifies when a phrase (e.g. "Build succeeded", "Kernel panic") appears on the target's screen, via on-device OCR. |
 | [`hello-nanokvm`](hello-nanokvm/) | Smoke test: confirms this Store installs and runs Apps. |
 
 ## Repository layout
@@ -54,7 +56,10 @@ treats every top-level directory as an App. That means:
 │   ├── applog.py           # log.txt in the App dir (launcher discards stdout/stderr)
 │   ├── appdata.py          # persistent data in /var/lib/nanokvm-apps (survives updates)
 │   ├── notify.py           # ntfy / Discord / Pushover / Home Assistant notifications
-│   └── jpegdc.py           # DC-only JPEG decoder: block-average colours, pure Python
+│   ├── jpegdc.py           # DC-only JPEG decoder: block-average colours, pure Python
+│   ├── vinsnap.py          # snapshot client for the KVM's video service
+│   ├── alerter.py          # alert log, pause and retry queue for background services
+│   └── servicekit.py       # helpers for Apps with a background systemd service
 ├── _template/              # starter App copied by _tools/new_app.py
 ├── _tools/
 │   ├── new_app.py          # scaffold a new App with a matching app_id and shared modules
