@@ -25,3 +25,6 @@ dist/
 # On-device runtime files (if copied back from a device)
 log.txt
 .state.json
+.data/
+**/.data/
+service-log.txt
