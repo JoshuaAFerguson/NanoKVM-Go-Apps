@@ -8,7 +8,7 @@ Install on each machine you run Claude Code on (see ai-monitor/README.md):
   NANOKVM_AI_INSECURE=1 to skip TLS verification (tailnet only)
   NANOKVM_AI_MACHINE name shown on the KVM (default: hostname)
 
-Never breaks Claude Code: no output, always exits 0. Only state *changes* are
+State lives in ~/.cache/nanokvm-agent-hook. Never breaks Claude Code: no output, always exits 0. Only state *changes* are
 sent (tool hooks fire constantly), and after a failure it stays quiet for a
 minute, so an unreachable KVM costs at most one short timeout per minute.
 """
@@ -17,7 +17,7 @@ from __future__ import annotations
 
 import json
 import os
-import tempfile
+import stat
 import time
 import re
 import socket
@@ -27,7 +27,7 @@ import urllib.request
 
 TIMEOUT_S = 2
 BACKOFF_S = 60
-STATE_DIR = os.path.join(tempfile.gettempdir(), f"nanokvm-agent-hook-{os.getuid() if hasattr(os, 'getuid') else 0}")
+STATE_DIR = os.path.join(os.path.expanduser("~"), ".cache", "nanokvm-agent-hook")  # per-user, not shared /tmp
 
 WAITING_TYPES = {"permission_prompt", "elicitation_dialog", "agent_needs_input"}
 EVENT_STATES = {"SessionStart": "idle", "UserPromptSubmit": "working", "PreToolUse": "working",
@@ -63,9 +63,25 @@ def _marker(name: str) -> str:
     return os.path.join(STATE_DIR, re.sub(r"[^A-Za-z0-9_-]", "_", name)[:80])
 
 
+def _state_dir() -> None:
+    """Create the state dir and refuse it unless it's a real 0700 directory we own."""
+    os.makedirs(STATE_DIR, mode=0o700, exist_ok=True)
+    st = os.lstat(STATE_DIR)
+    if not stat.S_ISDIR(st.st_mode) or (hasattr(os, "getuid") and st.st_uid != os.getuid()) \
+            or stat.S_IMODE(st.st_mode) & 0o077:
+        raise OSError("unsafe hook state directory")
+
+
+def _write(path: str, value: str) -> None:
+    flags = os.O_WRONLY | os.O_CREAT | os.O_TRUNC | getattr(os, "O_NOFOLLOW", 0)
+    fd = os.open(path, flags, 0o600)
+    with os.fdopen(fd, "w", encoding="utf-8") as fh:
+        fh.write(value)
+
+
 def unchanged(session: str, state: str, message: str) -> bool:
     """True if this session already reported exactly this; records it otherwise."""
-    os.makedirs(STATE_DIR, mode=0o700, exist_ok=True)
+    _state_dir()
     path, value = _marker("s-" + session), f"{state}\n{message}"
     try:
         with open(path, encoding="utf-8") as fh:
@@ -73,8 +89,7 @@ def unchanged(session: str, state: str, message: str) -> bool:
                 return True
     except OSError:
         pass
-    with open(path, "w", encoding="utf-8") as fh:
-        fh.write(value)
+    _write(path, value)
     return False
 
 
@@ -114,8 +129,8 @@ def main() -> int:
             opener.open(request, timeout=TIMEOUT_S).close()
         except Exception:
             try:  # back off, and let the same state be retried after the back-off
-                os.makedirs(STATE_DIR, mode=0o700, exist_ok=True)
-                open(_marker("failed"), "w").close()
+                _state_dir()
+                _write(_marker("failed"), "")
                 os.unlink(_marker("s-" + session))
             except OSError:
                 pass
