@@ -1,0 +1,65 @@
+{
+  "app_id": "io.github.joshuaaferguson.text_alert",
+  "name": "Text Alert",
+  "creator": "Joshua Ferguson",
+  "create_time": "2026-10-16",
+  "version": "0.1.0",
+  "desc": "NanoKVM Go+ only: get notified when a phrase appears on the target's screen (on-device OCR).",
+  "category": "tools",
+  "post_script": "install-service.sh",
+  "env": {
+    "NANOKVM_MCP_KEY": {
+      "label": "NanoKVM MCP API key",
+      "description": "Enable MCP in Settings, then paste the API key shown there.",
+      "required": true,
+      "secret": true
+    },
+    "WATCH_TEXTS": {
+      "label": "Phrases to watch for",
+      "description": "Separated by ';', e.g. Build succeeded; Kernel panic; Installation complete. Case, spaces and punctuation are ignored."
+    },
+    "COOLDOWN_MIN": {
+      "label": "Repeat alert after (minutes)",
+      "description": "Per phrase, so a message that stays on screen alerts once",
+      "default": "10"
+    },
+    "POLL_S": {
+      "label": "Check every (seconds)",
+      "description": "10 to 3600",
+      "default": "20"
+    },
+    "DEVICE_NAME": {
+      "label": "Name in alerts",
+      "description": "Defaults to the device hostname"
+    },
+    "NTFY_URL": {
+      "label": "ntfy topic URL",
+      "description": "e.g. https://ntfy.sh/my-kvm-alerts (pick a hard-to-guess topic)"
+    },
+    "NTFY_TOKEN": {
+      "label": "ntfy access token",
+      "description": "Optional, for protected topics",
+      "secret": true
+    },
+    "DISCORD_WEBHOOK": {
+      "label": "Discord webhook URL",
+      "description": "https://discord.com/api/webhooks/...",
+      "secret": true
+    },
+    "PUSHOVER_TOKEN": {
+      "label": "Pushover app token",
+      "description": "30-character application token",
+      "secret": true
+    },
+    "PUSHOVER_USER": {
+      "label": "Pushover user key",
+      "description": "30-character user key",
+      "secret": true
+    },
+    "HA_WEBHOOK_URL": {
+      "label": "Home Assistant webhook URL",
+      "description": "http(s)://<ha>/api/webhook/<id>; payload has title, message, level, device",
+      "secret": true
+    }
+  }
+}

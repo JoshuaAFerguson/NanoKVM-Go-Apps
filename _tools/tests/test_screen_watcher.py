@@ -88,8 +88,9 @@ class ServiceTest(unittest.TestCase):
     def setUp(self):
         self._tmp = tempfile.TemporaryDirectory()
         root = Path(self._tmp.name)
-        self.app, self.data = root / "app", root / "data"
-        self.app.mkdir()
+        self.app, self.data = root / "apps" / "app", root / "data"
+        self.app.mkdir(parents=True)
+        (root / "apps" / "appbase.py").write_text("")  # marks a healthy apps directory
         self.data.mkdir()
         (self.app / "app.json").write_text(json.dumps({"env": {"CHECK_S": {"default": "30"}}}))
         (self.app / "watcher.py").write_text("")
@@ -161,10 +162,19 @@ class ServiceTest(unittest.TestCase):
         self.assertFalse(svc.app_gone())
         (self.app / "app.json").unlink()
         (self.app / "watcher.py").unlink()
-        for _ in range(4):
+        for _ in range(12):
             self.t += 30
             gone = svc.app_gone()
         self.assertTrue(gone)
+
+    def test_unhealthy_apps_dir_is_never_an_uninstall(self):
+        svc = self.service()
+        (self.app.parent / "appbase.py").unlink()  # e.g. storage not mounted properly
+        (self.app / "app.json").unlink()
+        (self.app / "watcher.py").unlink()
+        for _ in range(20):
+            self.t += 60
+            self.assertFalse(svc.app_gone())
 
     def test_resume_after_pause_summarises_active_conditions(self):
         notifier = FakeNotifier()

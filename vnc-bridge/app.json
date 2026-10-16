@@ -1,0 +1,43 @@
+{
+  "app_id": "io.github.joshuaaferguson.vnc_bridge",
+  "name": "VNC Bridge",
+  "creator": "Joshua Ferguson",
+  "create_time": "2026-10-16",
+  "version": "0.1.0",
+  "desc": "Control the KVM's target from any Tight-capable VNC client (TigerVNC, Remmina, noVNC, Guacamole).",
+  "category": "tools",
+  "post_script": "install-service.sh",
+  "env": {
+    "VNC_PASSWORD": {
+      "label": "VNC password",
+      "description": "6-8 characters (VNC only uses 8). Required.",
+      "required": true,
+      "secret": true
+    },
+    "VNC_BIND": {
+      "label": "Listen on",
+      "description": "tailscale (default, safest), lan, all, or a specific IPv4 address",
+      "default": "tailscale"
+    },
+    "VNC_PORT": {
+      "label": "Port",
+      "description": "1024-65535",
+      "default": "5900"
+    },
+    "VNC_QUALITY": {
+      "label": "JPEG quality",
+      "description": "10-90. Lower = less bandwidth",
+      "default": "50"
+    },
+    "VNC_MAX_FPS": {
+      "label": "Max frames per second",
+      "description": "1-30",
+      "default": "10"
+    },
+    "VNC_VIEW_ONLY": {
+      "label": "View only",
+      "description": "true to ignore keyboard and mouse from VNC clients",
+      "default": "false"
+    }
+  }
+}

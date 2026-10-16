@@ -33,6 +33,11 @@ ProtectHome=yes
 ProtectKernelTunables=yes
 ProtectKernelModules=yes
 ProtectControlGroups=yes
+ProtectSystem=full
+ReadWritePaths=/etc/systemd/system /var/lib/nanokvm-apps ${app_dir}
+RestrictAddressFamilies=AF_INET AF_UNIX AF_NETLINK
+CapabilityBoundingSet=CAP_NET_RAW
+TasksMax=32
 
 [Install]
 WantedBy=multi-user.target

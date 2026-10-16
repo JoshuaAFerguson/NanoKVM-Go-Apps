@@ -118,3 +118,19 @@ class ValidateCatalogTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class ModuleNameCollisionTest(unittest.TestCase):
+    """Apps' own modules must have unique names: the test suite imports every App's
+    modules into one process, so two Apps with e.g. config.py would shadow each other."""
+
+    def test_no_duplicate_app_module_names(self):
+        root = Path(__file__).resolve().parents[2]
+        shared = {p.name for p in (root / "_shared").glob("*.py")}
+        seen: dict = {}
+        for app_dir in (p for p in root.iterdir() if p.is_dir() and not p.name.startswith(("_", "."))):
+            for module in app_dir.glob("*.py"):
+                if module.name in shared or module.name == "main.py":
+                    continue
+                self.assertNotIn(module.name, seen, f"{module.name} in both {seen.get(module.name)} and {app_dir.name}")
+                seen[module.name] = app_dir.name
