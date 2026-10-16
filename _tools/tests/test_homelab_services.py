@@ -87,6 +87,19 @@ class FakeHomelab(BaseHTTPRequestHandler):
             if "fieldSelector" not in query:
                 return self._send(K8S_ALL)
             return self._send(K8S_PROBLEMS)
+        if path == "/drip":  # slow-drip body: one byte every 0.4 s, far past the deadline
+            import time as _t
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.end_headers()
+            try:
+                for _ in range(60):
+                    self.wfile.write(b" ")
+                    self.wfile.flush()
+                    _t.sleep(0.4)
+            except OSError:
+                pass
+            return None
         if path.startswith("/redirect"):
             self.send_response(302)
             self.send_header("Location", "http://example.invalid/steal")
@@ -232,6 +245,18 @@ class EndToEndTest(unittest.TestCase):
         svc = config.load(self.env(HA_TOKEN="sekret-token-value"))[0]
         svc = services.Service(**{**svc.__dict__, "url": "http://127.0.0.1:1"})
         self.assertNotIn("sekret", services.fetch(svc).error)
+
+    def test_slow_drip_response_hits_deadline(self):
+        import time
+        import httpjson
+        saved, httpjson.TIMEOUT_S = httpjson.TIMEOUT_S, 1.5
+        try:
+            start = time.monotonic()
+            with self.assertRaisesRegex(httpjson.HttpError, "timed out"):
+                httpjson.get_json(self.base + "/drip", "drip")
+            self.assertLess(time.monotonic() - start, 3.0)
+        finally:
+            httpjson.TIMEOUT_S = saved
 
     def test_unreachable_service_is_error_result(self):
         svc = config.load({"DOCKER_URL": "http://127.0.0.1:1"})[0]

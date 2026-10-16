@@ -56,12 +56,26 @@ def _opener(verify_tls: bool, ca_file: str):
     return _openers[key]
 
 
+def _shrink_socket_timeout(response, seconds: float) -> None:
+    """Best effort: make the next recv wait at most `seconds` (private attrs, may be absent)."""
+    sock = getattr(getattr(getattr(response, "fp", None), "raw", None), "_sock", None)
+    if sock is not None:
+        sock.settimeout(max(0.1, seconds))
+
+
 def _read_with_deadline(response, deadline: float, name: str) -> bytes:
+    """read1() does at most one recv per call, so a slow-drip server can't stretch
+    one read past the deadline; each recv's timeout is also cut to the time left."""
     chunks, total = [], 0
     while True:
-        if time.monotonic() > deadline:
+        left = deadline - time.monotonic()
+        if left <= 0:
             raise HttpError(f"{name}: timed out")
-        chunk = response.read(CHUNK)
+        _shrink_socket_timeout(response, left)
+        try:
+            chunk = response.read1(CHUNK)
+        except TimeoutError:
+            raise HttpError(f"{name}: timed out") from None
         if not chunk:
             return b"".join(chunks)
         total += len(chunk)
