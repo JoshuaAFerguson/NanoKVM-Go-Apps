@@ -1,0 +1,70 @@
+{
+  "app_id": "io.github.joshuaaferguson.screen_watcher",
+  "name": "Screen Watcher",
+  "creator": "Joshua Ferguson",
+  "create_time": "2026-10-16",
+  "version": "0.1.0",
+  "desc": "Background watcher: alerts (ntfy, Discord, Pushover, Home Assistant) when the target loses video, blue-screens, goes black or freezes.",
+  "category": "tools",
+  "post_script": "install-service.sh",
+  "env": {
+    "CHECK_S": {
+      "label": "Check every (seconds)",
+      "description": "15 to 3600. Each check briefly uses one CPU core (about 1.5 s at 1080p).",
+      "default": "30"
+    },
+    "SIGNAL_GRACE_S": {
+      "label": "Signal-loss grace (seconds)",
+      "description": "Alert when video has been gone this long (after having been seen)",
+      "default": "30"
+    },
+    "BSOD_ALERT": {
+      "label": "Blue-screen alert",
+      "description": "true/false. Turn off if your desktop or wallpaper is mostly blue",
+      "default": "true"
+    },
+    "BLACK_MIN": {
+      "label": "Black-screen alert (minutes)",
+      "description": "0 = off. Alert when the screen stays black (with signal) this long",
+      "default": "0"
+    },
+    "FREEZE_MIN": {
+      "label": "Frozen-screen alert (minutes)",
+      "description": "0 = off. Alert when nothing changes on screen this long",
+      "default": "0"
+    },
+    "DEVICE_NAME": {
+      "label": "Name in alerts",
+      "description": "Defaults to the device hostname"
+    },
+    "NTFY_URL": {
+      "label": "ntfy topic URL",
+      "description": "e.g. https://ntfy.sh/my-kvm-alerts (pick a hard-to-guess topic)"
+    },
+    "NTFY_TOKEN": {
+      "label": "ntfy access token",
+      "description": "Optional, for protected topics",
+      "secret": true
+    },
+    "DISCORD_WEBHOOK": {
+      "label": "Discord webhook URL",
+      "description": "https://discord.com/api/webhooks/...",
+      "secret": true
+    },
+    "PUSHOVER_TOKEN": {
+      "label": "Pushover app token",
+      "description": "30-character application token",
+      "secret": true
+    },
+    "PUSHOVER_USER": {
+      "label": "Pushover user key",
+      "description": "30-character user key",
+      "secret": true
+    },
+    "HA_WEBHOOK_URL": {
+      "label": "Home Assistant webhook URL",
+      "description": "http(s)://<ha>/api/webhook/<id>; payload has title, message, level, device",
+      "secret": true
+    }
+  }
+}

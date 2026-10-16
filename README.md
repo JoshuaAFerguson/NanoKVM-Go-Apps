@@ -36,6 +36,7 @@ treats every top-level directory as an App. That means:
 | [`kvm-status`](kvm-status/) | Dashboard: target video/USB, Wi-Fi, IPs, CPU, temperature, memory. Detects and fixes a stuck video service. |
 | [`wol-panel`](wol-panel/) | Wake-on-LAN: tap a machine to wake it, with live online/offline status. |
 | [`homelab-glance`](homelab-glance/) | Home Assistant, Uptime Kuma, Proxmox, Prometheus, Kubernetes and Docker status with drill-down. |
+| [`screen-watcher`](screen-watcher/) | Background alerts (ntfy, Discord, Pushover, Home Assistant) when the target loses video, blue-screens, goes black or freezes. |
 | [`hello-nanokvm`](hello-nanokvm/) | Smoke test: confirms this Store installs and runs Apps. |
 
 ## Repository layout
@@ -50,7 +51,10 @@ treats every top-level directory as an App. That means:
 │   ├── ui.py               # layout, palette, buttons, headers
 │   ├── netinfo.py          # interface IP/netmask via ioctl
 │   ├── font.py             # 8x8 font with lowercase + punctuation, fast renderer
-│   └── applog.py           # log.txt in the App dir (launcher discards stdout/stderr)
+│   ├── applog.py           # log.txt in the App dir (launcher discards stdout/stderr)
+│   ├── appdata.py          # persistent data in /var/lib/nanokvm-apps (survives updates)
+│   ├── notify.py           # ntfy / Discord / Pushover / Home Assistant notifications
+│   └── jpegdc.py           # DC-only JPEG decoder: block-average colours, pure Python
 ├── _template/              # starter App copied by _tools/new_app.py
 ├── _tools/
 │   ├── new_app.py          # scaffold a new App with a matching app_id and shared modules
