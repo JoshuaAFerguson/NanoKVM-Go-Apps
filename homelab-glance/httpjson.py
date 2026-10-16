@@ -105,6 +105,8 @@ def _read_chunks(response, deadline: float, name: str, fired: threading.Event) -
                 raise HttpError(f"{name}: timed out") from None
             raise
         if not chunk:
+            if fired.is_set():  # Linux: shutdown() makes the blocked recv return EOF, not raise
+                raise HttpError(f"{name}: timed out")
             return b"".join(chunks)
         total += len(chunk)
         if total > MAX_BYTES:
