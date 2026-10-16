@@ -32,6 +32,7 @@ treats every top-level directory as an App. That means:
 
 | App | Description |
 | --- | --- |
+| [`macro-pad`](macro-pad/) | Touch buttons for key combos, BIOS/boot keys and text on the target. Profiles for Windows, macOS, Linux, mobile, plus your own. Needs the MCP key. |
 | [`hello-nanokvm`](hello-nanokvm/) | Smoke test: confirms this Store installs and runs Apps. |
 
 ## Repository layout
@@ -41,9 +42,16 @@ treats every top-level directory as an App. That means:
 ├── hello-nanokvm/          # one directory per App (the catalog)
 │   ├── app.json
 │   └── main.py
+├── _shared/                # code shared by Apps, copied into each App that uses it
+│   ├── kvm_mcp.py          # client for the device's MCP server (keyboard, mouse, screenshot)
+│   ├── ui.py               # layout, palette, buttons, headers
+│   ├── font.py             # 8x8 font with lowercase + punctuation, fast renderer
+│   └── applog.py           # log.txt in the App dir (launcher discards stdout/stderr)
 ├── _template/              # starter App copied by _tools/new_app.py
 ├── _tools/
-│   ├── new_app.py          # scaffold a new App with a matching app_id
+│   ├── new_app.py          # scaffold a new App with a matching app_id and shared modules
+│   ├── sync_shared.py      # copy _shared/ changes into Apps (--check in CI)
+│   ├── preview_app.py      # render an App's screen locally to a PPM image
 │   ├── validate_catalog.py # check every App against the launcher's rules
 │   ├── package_app.py      # build an upload ZIP for Settings → Apps → Upload ZIP
 │   ├── fetch_sdk.sh        # pull appbase SDK into _sdk/ for IDE type hints
@@ -57,7 +65,9 @@ treats every top-level directory as an App. That means:
 ./_tools/fetch_sdk.sh                         # once: SDK + guide into _sdk/ (git-ignored)
 python3 _tools/new_app.py weather-panel "Weather"
 # edit weather-panel/main.py and app.json
-python3 _tools/validate_catalog.py
+python3 _tools/preview_app.py weather-panel /tmp/w.ppm && open /tmp/w.ppm   # local screenshot
+python3 -m unittest discover -s _tools/tests
+python3 _tools/validate_catalog.py && python3 _tools/sync_shared.py --check
 python3 _tools/package_app.py weather-panel   # optional: dist/weather-panel.zip
 ```
 
@@ -80,13 +90,24 @@ scp -r weather-panel root@<device-ip>:/kvmcomm/apps/   # list refreshes in ~10s
 - Don't bundle `appbase.py`. The device provides the shared SDK.
 - Never commit secrets. Declare them in `env` with `"secret": true`.
 
-### Display notes
+### Shared code
 
-The panel is 284×240 physical with 14 hidden pixels. Apps normally run at
-`rotate=90` on a 240×284 logical canvas, where the bottom 14 rows are hidden.
-Lay out against the visible rect (see `_template/main.py`) and keep the left
-and right edges free of swipe controls, because the host reserves them for the
-exit gesture.
+The Store installs one App directory at a time, so Apps can't import from each other.
+Shared modules live in `_shared/` and are **copied** into each App that uses them.
+Edit only `_shared/`, then run `python3 _tools/sync_shared.py`. CI fails if a copy is stale.
+Start using one with `python3 _tools/sync_shared.py add <app> <module>`.
+
+### Display notes (verified on hardware, 2026-10)
+
+The upstream guide is out of date here. On current firmware both models launch Apps at
+`rotate=90` on a **284×240 landscape** canvas, and **all of it is visible** (no hidden
+strip). The SDK font is uppercase-only with a few symbols; `_shared/font.py` adds
+lowercase and punctuation. At about 200 ppi, scale-1 text is roughly 1 mm tall, so use
+scale 2 for anything people need to read. Drawing text is slow, so redraw only when
+something changes. The host reserves the left and right 40 px for its exit swipe.
+
+Memory: the Go has about 35 MB free. Keep Apps under about 20 MB RSS and avoid heavy
+imports. Apps run as root; the launcher discards stdout/stderr, so use `applog`.
 
 SDK reference: [`base` branch guide](https://github.com/sipeed/NanoKVM-Go-Apps/blob/base/README.md).
 

@@ -1,32 +1,33 @@
 #!/usr/bin/env python3
-"""Starter App. Copy _template/ to a new kebab-case directory and edit app.json."""
+"""Starter App. Create a copy with: python3 _tools/new_app.py <kebab-name> "Display Name"."""
 
-from appbase import WHITE, AppContext, Rect, app
+from pathlib import Path
 
-HIDDEN_EDGE_PX = 14  # panel cannot display these rows/columns
+from appbase import AppContext, app
 
+import ui
+from applog import AppLog
 
-def visible_rect(ctx: AppContext) -> Rect:
-    """Area the panel actually shows for the current host rotation."""
-    fb = ctx.fb
-    if fb.rotate == 90:
-        return Rect(0, 0, fb.width, fb.height - HIDDEN_EDGE_PX)
-    if fb.rotate == 270:
-        return Rect(0, HIDDEN_EDGE_PX, fb.width, fb.height - HIDDEN_EDGE_PX)
-    if fb.rotate == 180:
-        return Rect(0, 0, fb.width - HIDDEN_EDGE_PX, fb.height)
-    return Rect(HIDDEN_EDGE_PX, 0, fb.width - HIDDEN_EDGE_PX, fb.height)
+APP_DIR = Path(__file__).resolve().parent
+LOG = AppLog(APP_DIR)
 
 
 @app()
 def main(ctx: AppContext) -> None:
-    view = visible_rect(ctx)
+    screen = ui.screen(ctx)  # 284x240, fully visible
+    header, body = screen.split_top(28)
+    state = {"dirty": True}
 
     def tick(dt: float) -> None:
-        ctx.fb.clear(0)
-        ctx.fb.text_center(view.cx, view.cy - 8, "MY APP", WHITE, 2)
+        if not state["dirty"]:
+            return  # text drawing is slow; redraw only when something changed
+        ctx.fb.clear(ui.BG)
+        ui.draw_header(ctx.fb, header, "My App")
+        ui.draw_text_center(ctx.fb, body, "Hello", ui.TEXT, 3)
+        state["dirty"] = False
 
-    ctx.run(tick, fps=10)
+    LOG.info("started")
+    ctx.run(LOG.guard(tick), fps=10)
 
 
 if __name__ == "__main__":

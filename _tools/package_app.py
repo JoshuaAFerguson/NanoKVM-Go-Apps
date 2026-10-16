@@ -14,7 +14,7 @@ from pathlib import Path
 
 from validate_catalog import validate_app
 
-EXCLUDED_NAMES = {"__pycache__", ".DS_Store", ".pytest_cache"}
+EXCLUDED_NAMES = {"__pycache__", ".DS_Store", ".pytest_cache", "log.txt", ".state.json"}
 EXCLUDED_SUFFIXES = {".pyc", ".pyo"}
 
 
