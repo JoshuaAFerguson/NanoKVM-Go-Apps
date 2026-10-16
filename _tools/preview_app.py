@@ -67,12 +67,13 @@ class FakeFramebuffer:
 
 
 class FakeContext:
-    def __init__(self, env: dict, events: list, frames: int) -> None:
+    def __init__(self, env: dict, events: list, frames: int, realtime: bool = False) -> None:
         self.fb = FakeFramebuffer()
         self.env = types.MappingProxyType(env)
         self.width, self.height = WIDTH, HEIGHT
         self._events = events
         self._frames = frames
+        self._realtime = realtime
 
     def poll(self):
         events, self._events = self._events, []
@@ -91,6 +92,9 @@ class FakeContext:
                     on_swipe(kind, x, y)
             if tick(1 / max(fps, 1)) is False:
                 break
+            if self._realtime:
+                import time
+                time.sleep(1 / max(fps, 1))
 
 
 def install_fake_appbase(ctx: FakeContext, app_dir: Path) -> None:
@@ -129,6 +133,7 @@ def main(argv: list[str]) -> int:
     parser.add_argument("out", type=Path, nargs="?")
     parser.add_argument("--env", action="append", default=[], metavar="K=V")
     parser.add_argument("--frames", type=int, default=3)
+    parser.add_argument("--realtime", action="store_true", help="sleep 1/fps between frames (for apps with background threads)")
     parser.add_argument("--tap", action="append", default=[], metavar="X,Y")
     parser.add_argument("--swipe", action="append", default=[], choices=["up", "down", "left", "right"])
     args = parser.parse_args(argv[1:])
@@ -143,7 +148,7 @@ def main(argv: list[str]) -> int:
         env[key] = value
     events = [("tap", *map(int, t.split(","))) for t in args.tap]
     events += [(kind, WIDTH // 2, HEIGHT // 2) for kind in args.swipe]
-    ctx = FakeContext(env, events, args.frames)
+    ctx = FakeContext(env, events, args.frames, args.realtime)
 
     install_fake_appbase(ctx, app_dir)
     sys.path.insert(0, str(app_dir))
