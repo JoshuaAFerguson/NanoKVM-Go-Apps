@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+
+# Local SDK copy (_tools/fetch_sdk.sh) - the device provides its own appbase
+_sdk/
+
+# Build output from _tools/package_app.py
+dist/
+*.zip
+
+# OS / editors
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# Secrets - App config belongs in app.json "env", set on the device
+.env
+.env.*

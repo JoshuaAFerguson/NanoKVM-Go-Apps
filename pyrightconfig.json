@@ -1,0 +1,5 @@
+{
+  "extraPaths": ["_sdk"],
+  "exclude": ["_sdk", "dist", "**/__pycache__"],
+  "pythonVersion": "3.11"
+}

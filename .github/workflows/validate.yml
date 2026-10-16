@@ -1,0 +1,28 @@
+name: Validate catalog
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Unit tests
+        run: python -m unittest discover -s _tools/tests -v
+      - name: Validate App manifests
+        run: python _tools/validate_catalog.py
+      - name: Check shell scripts are LF
+        run: |
+          if grep -rlI $'\r' --include='*.sh' .; then
+            echo "CRLF line endings found in the scripts above" >&2
+            exit 1
+          fi

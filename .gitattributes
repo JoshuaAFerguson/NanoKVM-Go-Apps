@@ -1,0 +1,11 @@
+# Apps run on Linux: shell scripts with CRLF fail under /bin/bash on the device.
+* text=auto eol=lf
+*.png binary
+*.bin binary
+*.zip binary
+
+# The device downloads this repo via codeload (git archive), which honors
+# export-ignore. Dev-only paths are left out to keep each Store fetch small.
+/_tools export-ignore
+/_template export-ignore
+/.github export-ignore

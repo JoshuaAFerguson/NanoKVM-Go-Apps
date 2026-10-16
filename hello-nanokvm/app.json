@@ -1,0 +1,9 @@
+{
+  "app_id": "io.github.joshuaaferguson.hello_nanokvm",
+  "name": "Hello NanoKVM",
+  "creator": "Joshua Ferguson",
+  "create_time": "2026-10-16",
+  "version": "0.1.0",
+  "desc": "Smoke test for this App Store: shows a greeting and counts taps.",
+  "category": "demo"
+}

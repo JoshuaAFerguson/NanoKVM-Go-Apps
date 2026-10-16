@@ -1,0 +1,9 @@
+{
+  "app_id": "io.github.joshuaaferguson.my_app",
+  "name": "My App",
+  "creator": "Joshua Ferguson",
+  "create_time": "2026-10-16",
+  "version": "0.1.0",
+  "desc": "One-line description shown in the Store.",
+  "category": "tools"
+}
