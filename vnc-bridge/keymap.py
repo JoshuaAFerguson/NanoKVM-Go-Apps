@@ -71,7 +71,7 @@ class Keyboard:
 
     def __init__(self) -> None:
         self._mods: dict[int, set] = {}             # modifier bit -> owners
-        self._keys: dict[int, tuple[bool, set]] = {}  # usage -> (needs_shift, owners), in press order
+        self._keys: dict[int, dict] = {}  # usage -> {owner: needs_shift}, in press order
 
     @property
     def modifiers(self) -> int:
@@ -83,11 +83,11 @@ class Keyboard:
 
     @property
     def pressed(self) -> list[tuple[int, bool]]:
-        return [(usage, shift) for usage, (shift, _) in self._keys.items()]
+        return [(usage, any(owners.values())) for usage, owners in self._keys.items()]
 
     def _report(self) -> bytes:
         mods = self.modifiers
-        if any(shift for shift, _ in self._keys.values()) and not mods & (SHIFT_BIT | 0x20):
+        if any(shift for _, shift in self.pressed) and not mods & (SHIFT_BIT | 0x20):
             mods |= SHIFT_BIT
         keys = list(self._keys)[:MAX_KEYS]
         return bytes([mods, 0] + keys + [0] * (MAX_KEYS - len(keys)))
@@ -103,10 +103,13 @@ class Keyboard:
         if mapped is None:
             return None
         usage, needs_shift = mapped  # release matches by usage, not case
-        _, owners = self._keys.pop(usage, (needs_shift, set()))
-        owners = owners | {owner} if down else owners - {owner}
+        owners = dict(self._keys.pop(usage, {}))
+        if down:
+            owners[owner] = needs_shift
+        else:
+            owners.pop(owner, None)
         if owners:
-            self._keys[usage] = (needs_shift, owners)  # (re)press moves it to the end
+            self._keys[usage] = owners  # (re)press moves it to the end
         return self._report()
 
     def release_all(self) -> bytes:

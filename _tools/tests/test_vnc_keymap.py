@@ -52,6 +52,13 @@ class KeyboardTest(unittest.TestCase):
         kb.event(0xFFE3, False, owner="b")
         self.assertEqual(kb.event(ord("a"), False, owner="b"), bytes(8))
 
+    def test_shift_need_is_tracked_per_owner(self):
+        kb = Keyboard()
+        kb.event(ord("a"), True, owner="a")  # a holds lowercase "a"
+        self.assertEqual(kb.event(ord("A"), True, owner="b")[0], 0x02)  # b's "A" needs Shift
+        report = kb.event(ord("A"), False, owner="b")
+        self.assertEqual(report, bytes([0, 0, 0x04, 0, 0, 0, 0, 0]))  # back to a's plain "a"
+
     def test_simple_press_release(self):
         kb = Keyboard()
         self.assertEqual(kb.event(ord("a"), True), bytes([0, 0, 0x04, 0, 0, 0, 0, 0]))
